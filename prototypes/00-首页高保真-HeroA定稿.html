@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<!-- saved from url=(0128)file:///E:/code/Personal-center/prototypes/00-%E9%A6%96%E9%A1%B5%E9%AB%98%E4%BF%9D%E7%9C%9F-HeroA%E5%AE%9A%E7%A8%BF.html#contact -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>YOUR NAME · 独立开发者信号站</title>
+<link href="./YOUR NAME · 独立开发者信号站_files/css2" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #050810;
+    --bg-panel: #0c1220;
+    --bg-panel-2: #111a2e;
+    --line: #1a2540;
+    --neon: #00ffc8;
+    --neon-dim: rgba(0,255,200,0.3);
+    --warn: #ffb020;
+    --text: #c8d6e5;
+    --text-dim: #5a6b85;
+    --text-bright: #e8f4ff;
+  }
+  html, body { background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .rajd { font-family: 'Rajdhani', sans-serif; }
+
+  /* 全局网格背景 */
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(0,255,200,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,200,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  /* 鼠标光斑 */
+  #glow {
+    position: fixed; width: 500px; height: 500px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,200,0.08), transparent 60%);
+    pointer-events: none; z-index: 1; transform: translate(-50%, -50%);
+    transition: opacity .3s;
+  }
+
+  /* 顶部状态条 */
+  .topbar {
+    position: relative; z-index: 2;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 48px;
+    border-bottom: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--text-dim);
+  }
+  .topbar .brand { color: var(--text-bright); font-weight: 500; letter-spacing: 2px; }
+  .topbar .brand span { color: var(--neon); }
+  .topbar .nav { display: flex; gap: 24px; }
+  .topbar .nav a { color: var(--text-dim); text-decoration: none; transition: color .2s; }
+  .topbar .nav a:hover, .topbar .nav a.on { color: var(--neon); }
+  .led {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--neon); box-shadow: 0 0 8px var(--neon);
+    animation: blink 2s infinite; vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ============ HERO ============ */
+  .hero {
+    position: relative; z-index: 2;
+    max-width: 1200px; margin: 0 auto;
+    padding: 80px 48px 60px;
+    display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px;
+    align-items: center;
+    min-height: 70vh;
+  }
+  .hero-left .crumb {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--neon); margin-bottom: 20px;
+  }
+  .hero-left h1 {
+    font-family: 'Rajdhani', sans-serif; font-size: 56px; font-weight: 700;
+    color: var(--text-bright); line-height: 1.05; letter-spacing: 1px;
+  }
+  .hero-left h1 em { color: var(--neon); font-style: normal; }
+  .hero-left .slogan {
+    font-family: 'JetBrains Mono', monospace; font-size: 14px;
+    color: var(--neon); margin-top: 18px; min-height: 22px;
+  }
+  .hero-left .slogan::after {
+    content: '▊'; margin-left: 4px; animation: blink 1s infinite;
+  }
+  .hero-left .bio {
+    font-size: 15px; color: var(--text); line-height: 1.8;
+    margin-top: 18px; max-width: 480px;
+  }
+  .hero-left .techs { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .tech-tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--neon); border: 1px solid var(--neon-dim);
+    padding: 4px 10px;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  .hero-left .cta { margin-top: 30px; display: flex; gap: 14px; }
+  .btn {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    padding: 12px 24px; cursor: pointer; text-decoration: none;
+    transition: all .2s; display: inline-block;
+  }
+  .btn-primary {
+    background: var(--neon); color: #050810; font-weight: 700;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 0 100%);
+  }
+  .btn-primary:hover { box-shadow: 0 0 20px rgba(0,255,200,0.4); }
+  .btn-ghost {
+    color: var(--neon); border: 1px solid var(--neon-dim);
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 0 100%);
+  }
+  .btn-ghost:hover { background: rgba(0,255,200,0.08); }
+
+  /* 雷达 + 环绕技术 */
+  .hero-right { position: relative; height: 420px; }
+  .radar-wrap {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 260px; height: 260px;
+  }
+  .radar {
+    width: 100%; height: 100%; border-radius: 50%;
+    border: 1px solid rgba(0,255,200,0.15); position: relative;
+    background:
+      radial-gradient(circle, transparent 18%, rgba(0,255,200,0.05) 19%, transparent 20%,
+                      transparent 38%, rgba(0,255,200,0.05) 39%, transparent 40%,
+                      transparent 58%, rgba(0,255,200,0.05) 59%, transparent 60%);
+    box-shadow: inset 0 0 40px rgba(0,255,200,0.05);
+  }
+  .radar::before, .radar::after {
+    content:''; position: absolute; background: rgba(0,255,200,0.12);
+  }
+  .radar::before { left: 50%; top:0; bottom:0; width:1px; }
+  .radar::after { top: 50%; left:0; right:0; height:1px; }
+  .sweep {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(0,255,200,0.35), transparent 70deg);
+    animation: sweep 5s linear infinite;
+  }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+  .radar-center {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--neon); box-shadow: 0 0 12px var(--neon);
+  }
+
+  /* 环绕技术标签：小圆点在雷达上，引线拉出，单行文字无背景框 */
+  .orbit-tech {
+    position: absolute; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 12px; color: var(--text-bright);
+    display: flex; align-items: center; gap: 8px;
+    background: transparent; white-space: nowrap;
+    letter-spacing: 1px;
+  }
+  .orbit-tech .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  /* 引线 */
+  .orbit-tech::before {
+    content: ''; position: absolute; background: rgba(0,255,200,0.35);
+  }
+  /* 上：后端开发 */
+  .ot-1 { top: -12px; left: 50%; transform: translateX(-50%); }
+  .ot-1 .dot { background: var(--neon); box-shadow: 0 0 8px var(--neon); }
+  .ot-1::before { bottom: 100%; left: 50%; width: 1px; height: 20px; }
+  /* 右上：自动化 */
+  .ot-2 { top: 30px; right: -70px; }
+  .ot-2 .dot { background: #4a9fff; box-shadow: 0 0 8px #4a9fff; }
+  .ot-2::before { right: 100%; top: 50%; width: 26px; }
+  /* 右下：机器视觉 */
+  .ot-3 { bottom: 40px; right: -80px; }
+  .ot-3 .dot { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+  .ot-3::before { right: 100%; top: 50%; width: 36px; }
+  /* 下：硬件交互 */
+  .ot-4 { bottom: -20px; left: 50%; transform: translateX(-50%); }
+  .ot-4 .dot { background: #ff4d6d; box-shadow: 0 0 8px #ff4d6d; }
+  .ot-4::before { top: 100%; left: 50%; width: 1px; height: 18px; }
+  /* 左：前端 */
+  .ot-5 { top: 70px; left: -70px; }
+  .ot-5 .dot { background: #a78bfa; box-shadow: 0 0 8px #a78bfa; }
+  .ot-5::before { left: 100%; top: 50%; width: 26px; }
+
+  /* Hero 底部坐标条 */
+  .hero-coord {
+    position: relative; z-index: 2;
+    max-width: 1200px; margin: 0 auto; padding: 0 48px 30px;
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim);
+    border-top: 1px solid var(--line); padding-top: 16px;
+  }
+  .hero-coord b { color: var(--neon); font-weight: 400; }
+
+  /* ============ 重点项目区 ============ */
+  .section {
+    position: relative; z-index: 2;
+    max-width: 1200px; margin: 0 auto; padding: 60px 48px;
+  }
+  .section-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; }
+  .section-head h2 {
+    font-family: 'Rajdhani', sans-serif; font-size: 28px; color: var(--text-bright);
+    letter-spacing: 2px;
+  }
+  .section-head h2 span { color: var(--neon); font-size: 14px; margin-right: 10px; }
+  .section-head .tabs { display: flex; gap: 0; }
+  .section-head .tab {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    padding: 8px 18px; color: var(--text-dim); cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .section-head .tab.on {
+    color: var(--neon); border-color: var(--neon-dim);
+    background: rgba(0,255,200,0.05);
+  }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card {
+    background: var(--bg-panel); border: 1px solid var(--line);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    transition: all .25s; cursor: pointer; overflow: hidden;
+  }
+  .card:hover { border-color: var(--neon); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,255,200,0.1); }
+  .card .cover {
+    height: 160px; background: linear-gradient(135deg, #0c1220, #1a2540);
+    position: relative; overflow: hidden;
+    display: flex; align-items: flex-end; justify-content: flex-start;
+    padding: 10px;
+  }
+  .card .cover .project-id {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--text-dim); z-index: 1;
+  }
+  .card .cover::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(0,255,200,0.08), transparent);
+    transform: translateX(-100%); transition: transform .6s;
+  }
+  .card:hover .cover::after { transform: translateX(100%); }
+  .card .cover .ph { font-family: 'JetBrains Mono', monospace; color: var(--text-dim); font-size: 11px; }
+  .card .body { padding: 18px; }
+  .card .cat { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--neon); }
+  .card .title {
+    font-family: 'Rajdhani', sans-serif; font-size: 20px; color: var(--text-bright);
+    margin-top: 6px; font-weight: 600;
+  }
+  .card .sum { font-size: 13px; color: var(--text); margin-top: 8px; line-height: 1.6; }
+  .card .techs { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .card .techs span {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--neon); border: 1px solid var(--neon-dim); padding: 2px 8px;
+  }
+  .card .foot {
+    margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim);
+  }
+
+  /* ============ 终端页脚（真正的终端窗口样式） ============ */
+  .terminal-footer {
+    position: relative; z-index: 2;
+    margin-top: 60px; background: transparent;
+  }
+  .term-window {
+    max-width: 900px; margin: 0 auto;
+    border: 1px solid #1a2540;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(0,255,200,0.05);
+  }
+  .term-titlebar {
+    display: flex; align-items: center; gap: 8px;
+    background: #1a2030; padding: 10px 14px;
+    border-bottom: 1px solid #1a2540;
+  }
+  .term-titlebar .t-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .term-titlebar .t-dot.r { background: #ff5f57; }
+  .term-titlebar .t-dot.y { background: #febc2e; }
+  .term-titlebar .t-dot.g { background: #28c840; }
+  .term-titlebar .t-title {
+    flex: 1; text-align: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: #5a6b85;
+  }
+  .term-body {
+    background: #000; padding: 24px 28px;
+    font-family: 'JetBrains Mono', "Cascadia Mono", Consolas, monospace;
+    font-size: 13px; line-height: 1.9;
+    min-height: 280px;
+  }
+  .term-body .line { color: #c8d6e5; }
+  .term-body .line .prompt { color: #00ffc8; margin-right: 8px; }
+  .term-body .line .cmd { color: #e8f4ff; }
+  .term-body .line .out { color: #8899aa; }
+  .term-body .line .ok { color: #00ffc8; }
+  .term-body .line .label { color: #5a6b85; margin-right: 8px; }
+  .term-body a {
+    color: #00ffc8; text-decoration: none;
+    border-bottom: 1px dotted rgba(0,255,200,0.4);
+  }
+  .term-body .cursor {
+    display: inline-block; width: 8px; height: 15px;
+    background: #00ffc8; vertical-align: middle;
+    animation: blink 1s step-end infinite;
+  }
+  .term-bottom {
+    max-width: 1200px; margin: 20px auto 0;
+    padding: 0 48px;
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim);
+  }
+
+  /* 响应式 */
+  @media (max-width: 900px) {
+    .topbar { padding: 14px 20px; }
+    .topbar .nav { display: none; }
+    .hero { grid-template-columns: 1fr; padding: 40px 20px; gap: 30px; }
+    .hero-left h1 { font-size: 36px; }
+    .hero-right { height: 380px; }
+    .radar-wrap { width: 200px; height: 200px; }
+    .ot-2 { right: -10px; }
+    .ot-3 { right: -20px; }
+    .ot-5 { left: -10px; }
+    .hero-coord, .section, .term-inner, .term-bottom { padding-left: 20px; padding-right: 20px; }
+    .cards { grid-template-columns: 1fr; }
+    .section-head { flex-direction: column; gap: 16px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div id="glow" style="left: 785px; top: 237px;"></div>
+
+<!-- 顶部状态条 -->
+<div class="topbar">
+  <div class="brand">RED岸 <span>// STATION</span></div>
+  <div class="nav">
+    <a href="file:///E:/code/Personal-center/prototypes/00-%E9%A6%96%E9%A1%B5%E9%AB%98%E4%BF%9D%E7%9C%9F-HeroA%E5%AE%9A%E7%A8%BF.html#" class="on">HOME</a>
+    <a href="file:///E:/code/Personal-center/prototypes/00-%E9%A6%96%E9%A1%B5%E9%AB%98%E4%BF%9D%E7%9C%9F-HeroA%E5%AE%9A%E7%A8%BF.html#projects">PROJECTS</a>
+    <a href="file:///E:/code/Personal-center/prototypes/00-%E9%A6%96%E9%A1%B5%E9%AB%98%E4%BF%9D%E7%9C%9F-HeroA%E5%AE%9A%E7%A8%BF.html#">WORKS</a>
+    <a href="file:///E:/code/Personal-center/prototypes/00-%E9%A6%96%E9%A1%B5%E9%AB%98%E4%BF%9D%E7%9C%9F-HeroA%E5%AE%9A%E7%A8%BF.html#contact">CONTACT</a>
+  </div>
+  <div><span class="led"></span>ONLINE · UTC+8</div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="crumb">~/home — 欢迎访问我的信号站</div>
+    <h1>你好，我是<em>独立开发者</em><br>用代码解决实际问题</h1>
+    <div class="slogan" id="typewriter">&gt; 机器视觉 · OpenCV / 图像处理</div>
+    <p class="bio">
+      专注工业自动化、Python 工具链与全栈开发。
+      做过轨道信号检测、列车平稳测试等工业项目，也接小程序、网站、自动化脚本类的外包。
+      把复杂问题拆解成可运行的脚本，是我的日常。
+    </p>
+    <div class="techs">
+      <span class="tech-tag">Python</span>
+      <span class="tech-tag">Vue3</span>
+      <span class="tech-tag">FastAPI</span>
+      <span class="tech-tag">OpenCV</span>
+      <span class="tech-tag">工业自动化</span>
+    </div>
+    <div class="cta">
+      <a href="file:///E:/code/Personal-center/prototypes/00-%E9%A6%96%E9%A1%B5%E9%AB%98%E4%BF%9D%E7%9C%9F-HeroA%E5%AE%9A%E7%A8%BF.html#projects" class="btn btn-primary">查看作品 →</a>
+      <a href="file:///E:/code/Personal-center/prototypes/00-%E9%A6%96%E9%A1%B5%E9%AB%98%E4%BF%9D%E7%9C%9F-HeroA%E5%AE%9A%E7%A8%BF.html#contact" class="btn btn-ghost">联系我</a>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="radar-wrap">
+      <div class="radar">
+        <div class="sweep"></div>
+        <div class="radar-center"></div>
+      </div>
+      <!-- 环绕技术标签 -->
+      <div class="orbit-tech ot-1">
+        <span class="dot"></span>
+        <span>后端开发</span>
+      </div>
+      <div class="orbit-tech ot-2">
+        <span class="dot"></span>
+        <span>自动化</span>
+      </div>
+      <div class="orbit-tech ot-3">
+        <span class="dot"></span>
+        <span>机器视觉</span>
+      </div>
+      <div class="orbit-tech ot-4">
+        <span class="dot"></span>
+        <span>硬件交互</span>
+      </div>
+      <div class="orbit-tech ot-5">
+        <span class="dot"></span>
+        <span>前端</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 坐标条 -->
+<div class="hero-coord">
+  <span>LAT <b>00.00°N</b> · LNG <b>000.00°E</b></span>
+  <span>SIGNAL STRENGTH <b>▮▮▮▮▮▯▯ 72%</b></span>
+  <span>UPTIME <b>99.9%</b></span>
+</div>
+
+<!-- 重点项目 -->
+<section class="section" id="projects">
+  <div class="section-head">
+    <h2><span>// 01</span>SIGNAL.ARCHIVE · 重点项目</h2>
+    <div class="tabs">
+      <div class="tab on" data-cat="project">[PROJECTS] 项目</div>
+      <div class="tab" data-cat="work">[WORKS] 作品</div>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="cover"><span class="project-id">PRJ-001</span></div>
+      <div class="body">
+        <div class="cat">// PROJECT</div>
+        <div class="title">轨道信号检测自动化系统</div>
+        <div class="sum">机械臂 + 继电器矩阵的轨道信号自动测试平台，多线程并发采集。</div>
+        <div class="techs">
+          <span>Python</span><span>串口通信</span><span>多线程</span>
+        </div>
+        <div class="foot">
+          <span>◉ 1,204 VIEWS</span>
+          <span>2026-08 →</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cover"><span class="project-id">PRJ-002</span></div>
+      <div class="body">
+        <div class="cat">// PROJECT</div>
+        <div class="title">智能列车平稳测试仪</div>
+        <div class="sum">嵌入式传感器采集 + 上位机分析，自动输出平稳性报告。</div>
+        <div class="techs">
+          <span>C++</span><span>传感器</span><span>Python</span>
+        </div>
+        <div class="foot">
+          <span>◉ 864 VIEWS</span>
+          <span>2026-06 →</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cover"><span class="project-id">PRJ-003</span></div>
+      <div class="body">
+        <div class="cat">// PROJECT</div>
+        <div class="title">WiFi 耳勺视觉助手</div>
+        <div class="sum">OpenCV 实时画面处理 + 手机端预览，硬件交互类项目。</div>
+        <div class="techs">
+          <span>OpenCV</span><span>ESP32</span><span>硬件</span>
+        </div>
+        <div class="foot">
+          <span>◉ 512 VIEWS</span>
+          <span>2026-07 →</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 终端页脚 -->
+<footer class="terminal-footer" id="contact">
+  <div class="term-window">
+    <div class="term-titlebar">
+      <span class="t-dot r"></span>
+      <span class="t-dot y"></span>
+      <span class="t-dot g"></span>
+      <span class="t-title">admin@red岸: ~/contact</span>
+    </div>
+    <div class="term-body">
+      <div class="line"><span class="prompt">$</span><span class="cmd">whoami</span></div>
+      <div class="line"><span class="out">→</span> 独立开发者 / 全栈 / 自动化方向</div>
+      <div class="line">&nbsp;</div>
+      <div class="line"><span class="prompt">$</span><span class="cmd">contact --all</span></div>
+      <div class="line"><span class="label">微信</span> <span class="out">your_wechat</span></div>
+      <div class="line"><span class="label">邮箱</span> <a href="mailto:hello@example.com">hello@example.com</a></div>
+      <div class="line"><span class="label">GitHub</span> <a href="file:///E:/code/Personal-center/prototypes/00-%E9%A6%96%E9%A1%B5%E9%AB%98%E4%BF%9D%E7%9C%9F-HeroA%E5%AE%9A%E7%A8%BF.html#">github.com/your-id</a></div>
+      <div class="line">&nbsp;</div>
+      <div class="line"><span class="prompt">$</span><span class="cmd">echo "欢迎接单 · 远程协作 · 长期有效"</span></div>
+      <div class="line ok">→ 终端就绪. 等待指令...</div>
+      <div class="line"><span class="prompt">$</span><span class="cursor"></span></div>
+    </div>
+  </div>
+  <div class="term-bottom">
+    <span>© 2026 YOUR NAME — Built with Vue3 + FastAPI</span>
+    <span>v2.1 · BUILD 2026.10.20</span>
+  </div>
+</footer>
+
+<script>
+  // 鼠标光斑
+  const glow = document.getElementById('glow');
+  document.addEventListener('mousemove', e => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top = e.clientY + 'px';
+  });
+
+  // 打字机
+  const slogans = [
+    '> 后端开发 · Python / FastAPI',
+    '> 工业自动化 · 轨道信号检测效率提升 8 倍',
+    '> 机器视觉 · OpenCV / 实时图像处理',
+    '> 硬件交互 · 嵌入式 / 机械臂控制',
+    '> 接外包 · 远程协作 · 长期有效'
+  ];
+  const tw = document.getElementById('typewriter');
+  let si = 0, ci = 0, deleting = false;
+  function tick() {
+    const s = slogans[si];
+    if (!deleting) {
+      ci++;
+      tw.textContent = s.slice(0, ci);
+      if (ci === s.length) { deleting = true; setTimeout(tick, 1800); return; }
+      setTimeout(tick, 60);
+    } else {
+      ci--;
+      tw.textContent = s.slice(0, ci);
+      if (ci === 0) { deleting = false; si = (si+1) % slogans.length; }
+      setTimeout(tick, 30);
+    }
+  }
+  tick();
+
+  // Tab 切换（原型阶段只切换样式）
+  document.querySelectorAll('.section-head .tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.section-head .tab').forEach(x => x.classList.remove('on'));
+      t.classList.add('on');
+    });
+  });
+</script>
+
+
+
+</body></html>

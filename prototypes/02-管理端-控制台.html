@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>个人中心原型 · 管理端控制台</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #030509; color: #c8d6e5;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    padding: 32px 40px 60px; min-height: 100vh;
+  }
+  .board-header { border-bottom: 1px solid #1a2540; padding-bottom: 20px; margin-bottom: 28px; }
+  .board-header h1 { font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 2px; color: #e8f4ff; }
+  .board-header h1 span { color: #ffb020; }
+  .board-header p { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5a6b85; margin-top: 8px; }
+  .meta { display: inline-block; padding: 2px 8px; border: 1px solid #1a2540; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #ffb020; margin-right: 8px; margin-top: 10px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  @media (max-width: 1200px) { .grid { grid-template-columns: 1fr; } }
+
+  .variant { display: flex; flex-direction: column; gap: 10px; }
+  .variant-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #ffb020; letter-spacing: 1px; }
+  .variant-label b { color: #e8f4ff; margin-right: 8px; }
+
+  .browser { background: #0a0f1c; border: 1px solid #1a2540; border-radius: 6px; overflow: hidden; }
+  .browser-bar { background: #070b14; padding: 8px 12px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #1a2540; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+  .url { flex: 1; margin-left: 10px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #5a6b85; background: #0a0f1c; padding: 3px 8px; border-radius: 3px; }
+  .screen { aspect-ratio: 9/14; overflow: hidden; position: relative; background: #050810; }
+  .screen::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,176,32,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,176,32,0.03) 1px, transparent 1px);
+    background-size: 24px 24px; pointer-events: none;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .rajd { font-family: 'Rajdhani', sans-serif; }
+
+  /* ============ 1. 登录页 ============ */
+  .login { height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
+  .login-box {
+    width: 90%; background: rgba(12,18,32,0.9); border: 1px solid rgba(255,176,32,0.3);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    padding: 20px;
+  }
+  .login-box .lock {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #ffb020;
+    letter-spacing: 2px; text-align: center;
+  }
+  .login-box .title {
+    font-family: 'Rajdhani', sans-serif; font-size: 18px; color: #fff;
+    text-align: center; margin-top: 6px; letter-spacing: 3px;
+  }
+  .login-box .divider {
+    text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 8px;
+    color: #5a6b85; margin: 14px 0;
+  }
+  .field { margin-bottom: 10px; }
+  .field label {
+    display: block; font-family: 'JetBrains Mono', monospace; font-size: 8px;
+    color: #5a6b85; margin-bottom: 4px;
+  }
+  .field input {
+    width: 100%; background: #050810; border: 1px solid #1a2540;
+    padding: 7px 10px; color: #e8f4ff; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; outline: none;
+  }
+  .field input:focus { border-color: #ffb020; }
+  .login-btn {
+    width: 100%; margin-top: 8px; padding: 9px; text-align: center;
+    background: #ffb020; color: #050810; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+  }
+  .login .back-to-site {
+    text-align: center; margin-top: 12px; font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: #5a6b85;
+  }
+  .login .back-to-site b { color: #00ffc8; }
+
+  /* ============ 2. 后台项目列表 ============ */
+  .admin { height: 100%; display: flex; flex-direction: column; position: relative; }
+  .admin .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid #1a2540;
+    background: rgba(255,176,32,0.04);
+  }
+  .admin .topbar .brand { font-family: 'Rajdhani', sans-serif; font-size: 13px; color: #fff; letter-spacing: 2px; }
+  .admin .topbar .brand span { color: #ffb020; }
+  .admin .topbar .user { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #5a6b85; }
+  .admin .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: #1a2540; }
+  .admin .stat { background: #0c1220; padding: 10px; text-align: center; }
+  .admin .stat .n { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; }
+  .admin .stat .l { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #5a6b85; }
+  .admin .stat.s1 .n { color: #fff; }
+  .admin .stat.s2 .n { color: #00ffc8; }
+  .admin .stat.s3 .n { color: #ffb020; }
+  .admin .toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px;
+  }
+  .admin .toolbar .title { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8899aa; }
+  .admin .toolbar .new-btn {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #050810;
+    background: #00ffc8; padding: 5px 10px;
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 0 100%);
+  }
+  table.list { width: 100%; border-collapse: collapse; font-size: 9px; }
+  table.list th {
+    text-align: left; padding: 6px 10px; font-family: 'JetBrains Mono', monospace;
+    color: #5a6b85; font-size: 8px; font-weight: 400;
+    border-bottom: 1px solid #1a2540;
+  }
+  table.list td { padding: 8px 10px; border-bottom: 1px solid #0c1220; color: #c8d6e5; }
+  table.list .t { color: #fff; font-size: 10px; }
+  .badge {
+    display: inline-block; padding: 1px 6px; font-family: 'JetBrains Mono', monospace;
+    font-size: 7px;
+  }
+  .badge.pub { color: #00ffc8; border: 1px solid rgba(0,255,200,0.4); }
+  .badge.draft { color: #ffb020; border: 1px solid rgba(255,176,32,0.4); }
+  .ops { font-family: 'JetBrains Mono', monospace; font-size: 8px; }
+  .ops .e { color: #00ffc8; margin-right: 6px; }
+  .ops .d { color: #ff4d4d; }
+
+  /* ============ 3. 项目编辑表单 ============ */
+  .edit { height: 100%; display: flex; flex-direction: column; }
+  .edit .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid #1a2540;
+  }
+  .edit .topbar .t { font-family: 'Rajdhani', sans-serif; font-size: 14px; color: #fff; }
+  .edit .topbar .t span { color: #ffb020; font-size: 10px; font-family: 'JetBrains Mono', monospace; margin-left: 8px; }
+  .edit .form { flex: 1; padding: 12px 14px; overflow-y: auto; }
+  .edit .row { margin-bottom: 10px; }
+  .edit .row label {
+    display: block; font-family: 'JetBrains Mono', monospace; font-size: 8px;
+    color: #5a6b85; margin-bottom: 3px;
+  }
+  .edit .row input, .edit .row textarea, .edit .row select {
+    width: 100%; background: #050810; border: 1px solid #1a2540;
+    padding: 6px 8px; color: #e8f4ff; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; outline: none;
+  }
+  .edit .row textarea { min-height: 60px; resize: vertical; }
+  .edit .row input:focus, .edit .row textarea:focus { border-color: #ffb020; }
+  .edit .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .edit .upload {
+    border: 1px dashed #1a2540; padding: 14px; text-align: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #5a6b85;
+  }
+  .edit .upload b { color: #00ffc8; }
+  .edit .editor-bar {
+    display: flex; gap: 6px; padding: 4px 8px; background: #0c1220;
+    border: 1px solid #1a2540; border-bottom: none; font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: #5a6b85;
+  }
+  .edit .editor-area {
+    border: 1px solid #1a2540; min-height: 80px; padding: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #8899aa; line-height: 1.6;
+  }
+  .edit .actions {
+    display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid #1a2540;
+    background: #0c1220;
+  }
+  .edit .btn-draft {
+    flex: 1; padding: 8px; text-align: center; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: #ffb020; border: 1px solid #ffb020;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+  }
+  .edit .btn-pub {
+    flex: 1; padding: 8px; text-align: center; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: #050810; background: #00ffc8;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%); font-weight: 700;
+  }
+
+  .note { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #5a6b85; line-height: 1.6; padding: 10px 4px 0; }
+  .note b { color: #ffb020; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="board-header">
+  <h1>PERSONAL CENTER · <span>管理端控制台（仅自己可见）</span></h1>
+  <p>// 管理端主色用黄 #ffb020 区分访客端绿 #00ffc8 — 视觉上一眼区分"这是后台"</p>
+  <span class="meta">v0.1 草图</span>
+  <span class="meta">ADMIN</span>
+  <span class="meta">一行三列</span>
+</div>
+
+<div class="grid">
+
+  <!-- 1. 登录 -->
+  <div class="variant">
+    <div class="variant-label"><b>A-01</b> 管理员登录 · 权限验证</div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">https://your-site.dev/admin/login</span>
+      </div>
+      <div class="screen">
+        <div class="login">
+          <div class="login-box">
+            <div class="lock">▣ AUTHORIZED.ONLY</div>
+            <div class="title">红岸控制台</div>
+            <div class="divider">— 请通过身份验证 —</div>
+            <div class="field">
+              <label>// USERNAME</label>
+              <input type="text" placeholder="admin">
+            </div>
+            <div class="field">
+              <label>// PASSWORD</label>
+              <input type="password" placeholder="••••••••">
+            </div>
+            <div class="login-btn">>>> 验 证</div>
+          </div>
+          <div class="back-to-site">← 返回 <b>公开站点</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <b>关键点：</b>切角登录卡片；主按钮用黄（后台色）；标题"红岸控制台"品牌化且简洁。
+    </div>
+  </div>
+
+  <!-- 2. 后台项目列表 -->
+  <div class="variant">
+    <div class="variant-label"><b>A-02</b> 项目列表 · 数据总览</div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">https://your-site.dev/admin/projects</span>
+      </div>
+      <div class="screen">
+        <div class="admin">
+          <div class="topbar">
+            <div class="brand">RED岸 <span>// CONSOLE</span></div>
+            <div class="user">admin ▾</div>
+          </div>
+          <div class="stats">
+            <div class="stat s1"><div class="n">20</div><div class="l">TOTAL 总数</div></div>
+            <div class="stat s2"><div class="n">15</div><div class="l">PUBLISHED 已发布</div></div>
+            <div class="stat s3"><div class="n">5</div><div class="l">DRAFT 草稿</div></div>
+          </div>
+          <div class="toolbar">
+            <div class="title">ALL PROJECTS — 全部项目</div>
+            <div class="new-btn">+ 新建</div>
+          </div>
+          <table class="list">
+            <thead>
+              <tr><th>标题</th><th>分类</th><th>状态</th><th>浏览</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="t">轨道信号检测系统</td>
+                <td>项目</td>
+                <td><span class="badge pub">已发布</span></td>
+                <td>1.2k</td>
+                <td class="ops"><span class="e">编辑</span><span class="d">删除</span></td>
+              </tr>
+              <tr>
+                <td class="t">列车平稳测试仪</td>
+                <td>项目</td>
+                <td><span class="badge pub">已发布</span></td>
+                <td>864</td>
+                <td class="ops"><span class="e">编辑</span><span class="d">删除</span></td>
+              </tr>
+              <tr>
+                <td class="t">新版个人中心 v2</td>
+                <td>作品</td>
+                <td><span class="badge draft">草稿</span></td>
+                <td>0</td>
+                <td class="ops"><span class="e">编辑</span><span class="d">删除</span></td>
+              </tr>
+              <tr>
+                <td class="t">WiFi 耳勺视觉助手</td>
+                <td>项目</td>
+                <td><span class="badge pub">已发布</span></td>
+                <td>512</td>
+                <td class="ops"><span class="e">编辑</span><span class="d">删除</span></td>
+              </tr>
+              <tr>
+                <td class="t">接单宣传图设计</td>
+                <td>作品</td>
+                <td><span class="badge draft">草稿</span></td>
+                <td>—</td>
+                <td class="ops"><span class="e">编辑</span><span class="d">删除</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <b>关键点：</b>顶部三色统计；表格用细横线分隔；状态标签绿=已发布、黄=草稿。
+    </div>
+  </div>
+
+  <!-- 3. 项目编辑 -->
+  <div class="variant">
+    <div class="variant-label"><b>A-03</b> 项目编辑 · 草稿/发布</div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">https://your-site.dev/admin/projects/new</span>
+      </div>
+      <div class="screen">
+        <div class="edit">
+          <div class="topbar">
+            <div class="t">新建项目 <span>DRAFT.005</span></div>
+          </div>
+          <div class="form">
+            <div class="row">
+              <label>// 标题 TITLE</label>
+              <input type="text" placeholder="项目标题">
+            </div>
+            <div class="row">
+              <label>// 一句话简介 SUMMARY</label>
+              <input type="text" placeholder="列表卡片显示的一句话">
+            </div>
+            <div class="two">
+              <div class="row">
+                <label>// 分类 CATEGORY</label>
+                <select><option>项目 project</option><option>作品 work</option></select>
+              </div>
+              <div class="row">
+                <label>// 技术栈 TAGS</label>
+                <input type="text" placeholder="Python, Vue3">
+              </div>
+            </div>
+            <div class="row">
+              <label>// 封面图 COVER</label>
+              <div class="upload">拖拽或 <b>点击上传</b> （jpg/png/webp, ≤5MB）</div>
+            </div>
+            <div class="two">
+              <div class="row">
+                <label>// 演示链接</label>
+                <input type="text" placeholder="https://">
+              </div>
+              <div class="row">
+                <label>// GitHub 链接</label>
+                <input type="text" placeholder="https://github.com/">
+              </div>
+            </div>
+            <div class="row">
+              <label>// 正文 CONTENT（Markdown）</label>
+              <div class="editor-bar"><b>B</b> <i>I</i> <u>U</u> &nbsp; H1 H2 &nbsp; <> </div>
+              <div class="editor-area"># 项目概述<br><br>在这里写项目正文...</div>
+            </div>
+          </div>
+          <div class="actions">
+            <div class="btn-draft">□ 存草稿</div>
+            <div class="btn-pub">▶ 发 布</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <b>关键点：</b>底部双按钮语义色分离——黄=草稿（保存不公开），绿=发布（上线）。
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

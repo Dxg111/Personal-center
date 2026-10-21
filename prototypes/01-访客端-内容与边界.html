@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>个人中心原型 · 访客端内容与边界</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #030509; color: #c8d6e5;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    padding: 32px 40px 60px; min-height: 100vh;
+  }
+  .board-header { border-bottom: 1px solid #1a2540; padding-bottom: 20px; margin-bottom: 28px; }
+  .board-header h1 { font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 2px; color: #e8f4ff; }
+  .board-header h1 span { color: #00ffc8; }
+  .board-header p { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5a6b85; margin-top: 8px; }
+  .meta { display: inline-block; padding: 2px 8px; border: 1px solid #1a2540; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #00ffc8; margin-right: 8px; margin-top: 10px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  @media (max-width: 1200px) { .grid { grid-template-columns: 1fr; } }
+
+  .variant { display: flex; flex-direction: column; gap: 10px; }
+  .variant-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #00ffc8; letter-spacing: 1px; }
+  .variant-label b { color: #e8f4ff; margin-right: 8px; }
+
+  .browser { background: #0a0f1c; border: 1px solid #1a2540; border-radius: 6px; overflow: hidden; }
+  .browser-bar { background: #070b14; padding: 8px 12px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #1a2540; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+  .url { flex: 1; margin-left: 10px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #5a6b85; background: #0a0f1c; padding: 3px 8px; border-radius: 3px; }
+  .screen { aspect-ratio: 9/14; overflow: hidden; position: relative; background: #050810; }
+  .screen::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,200,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,200,0.03) 1px, transparent 1px);
+    background-size: 24px 24px; pointer-events: none;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .rajd { font-family: 'Rajdhani', sans-serif; }
+  .led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #00ffc8; box-shadow: 0 0 6px #00ffc8; }
+
+  /* ============ 1. 项目列表 / 分类切换 ============ */
+  .list { padding: 16px; height: 100%; display: flex; flex-direction: column; position: relative; }
+  .list .crumb { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #5a6b85; }
+  .list h2 { font-family: 'Rajdhani', sans-serif; font-size: 18px; color: #fff; margin-top: 6px; letter-spacing: 1px; }
+  .list .tabs { display: flex; gap: 0; margin-top: 12px; border-bottom: 1px solid #1a2540; }
+  .list .tab {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 6px 14px;
+    color: #5a6b85; cursor: pointer;
+  }
+  .list .tab.on { color: #00ffc8; border-bottom: 1px solid #00ffc8; }
+  .proj-list { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+  .proj-card {
+    background: #0c1220; border: 1px solid #1a2540; padding: 10px;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    transition: all .2s;
+  }
+  .proj-card:hover { border-color: rgba(0,255,200,0.5); }
+  .proj-card .row1 { display: flex; justify-content: space-between; align-items: center; }
+  .proj-card .title { font-family: 'Rajdhani', sans-serif; font-size: 13px; color: #fff; font-weight: 600; }
+  .proj-card .views { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #5a6b85; }
+  .proj-card .sum { font-size: 9px; color: #8899aa; margin-top: 4px; line-height: 1.5; }
+  .proj-card .techs { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 3px; }
+  .proj-card .tech {
+    font-family: 'JetBrains Mono', monospace; font-size: 7px; color: #00ffc8;
+    border: 1px solid rgba(0,255,200,0.3); padding: 1px 5px;
+  }
+  .proj-card .cover {
+    height: 50px; margin-bottom: 8px;
+    background: linear-gradient(135deg, #0c1220, #1a2540);
+    border: 1px solid #1a2540; position: relative; overflow: hidden;
+  }
+  .proj-card .cover::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(0,255,200,0.1), transparent);
+  }
+
+  /* ============ 2. 项目详情 ============ */
+  .detail { padding: 16px; height: 100%; overflow-y: auto; position: relative; }
+  .detail .back { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #5a6b85; }
+  .detail .back b { color: #00ffc8; }
+  .detail h1 { font-family: 'Rajdhani', sans-serif; font-size: 18px; color: #fff; margin-top: 8px; letter-spacing: 1px; }
+  .detail .meta-row { display: flex; gap: 10px; margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #5a6b85; }
+  .detail .cover {
+    height: 80px; margin: 10px 0;
+    background: linear-gradient(135deg, #0c1220 0%, #1a2540 100%);
+    border: 1px solid #1a2540; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .detail .cover span { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #5a6b85; }
+  .detail .techs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .detail .tech {
+    font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #00ffc8;
+    border: 1px solid rgba(0,255,200,0.3); padding: 2px 6px;
+  }
+  .detail .body { font-size: 9px; color: #aabbcc; line-height: 1.7; }
+  .detail .body h4 { color: #fff; font-size: 11px; margin: 8px 0 4px; font-family: 'Rajdhani', sans-serif; }
+  .detail .body code {
+    font-family: 'JetBrains Mono', monospace; background: #0c1220;
+    padding: 1px 4px; color: #00ffc8; font-size: 8px;
+  }
+  .detail .links { display: flex; gap: 8px; margin-top: 12px; }
+  .detail .lnk {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 5px 10px;
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 0 100%);
+  }
+  .detail .lnk.primary { background: #00ffc8; color: #050810; }
+  .detail .lnk.ghost { border: 1px solid rgba(0,255,200,0.4); color: #00ffc8; }
+  .detail .foot {
+    margin-top: 12px; padding-top: 8px; border-top: 1px solid #1a2540;
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #5a6b85;
+  }
+
+  /* ============ 3. 404 页 ============ */
+  .nf { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; text-align: center; }
+  .nf .radar-fail {
+    width: 120px; height: 120px; border-radius: 50%;
+    border: 1px solid rgba(0,255,200,0.2); position: relative;
+    background:
+      radial-gradient(circle, transparent 18%, rgba(0,255,200,0.03) 19%, transparent 20%,
+                      transparent 38%, rgba(0,255,200,0.03) 39%, transparent 40%,
+                      transparent 58%, rgba(0,255,200,0.03) 59%, transparent 60%);
+    margin-bottom: 16px;
+  }
+  .nf .radar-fail::before, .nf .radar-fail::after {
+    content:''; position: absolute; background: rgba(0,255,200,0.15);
+  }
+  .nf .radar-fail::before { left: 50%; top:0; bottom:0; width:1px; }
+  .nf .radar-fail::after { top: 50%; left:0; right:0; height:1px; }
+  .nf .sweep-fail {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 135deg, rgba(255,77,77,0.4), transparent 30deg);
+    animation: sweep-stuck 0.5s ease-in-out;
+    transform: rotate(135deg);
+  }
+  @keyframes sweep-stuck {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .nf .code {
+    font-family: 'Rajdhani', sans-serif; font-size: 48px; font-weight: 700;
+    color: #ff4d4d; line-height: 1; letter-spacing: 4px;
+  }
+  .nf .label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #00ffc8;
+    margin-top: 8px; letter-spacing: 2px;
+  }
+  .nf .desc { font-size: 10px; color: #8899aa; margin-top: 12px; line-height: 1.6; max-width: 260px; }
+  .nf .wave {
+    margin-top: 16px; width: 180px; height: 24px; opacity: 0.5;
+  }
+  .nf .btn {
+    margin-top: 16px; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: #050810; background: #00ffc8; padding: 8px 16px;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+  }
+
+  .note { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #5a6b85; line-height: 1.6; padding: 10px 4px 0; }
+  .note b { color: #00ffc8; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="board-header">
+  <h1>PERSONAL CENTER · <span>访客端内容页 & 边界状态</span></h1>
+  <p>// 项目列表 / 详情 / 404 — 红岸信号解码视图</p>
+  <span class="meta">v0.1 草图</span>
+  <span class="meta">DESKTOP</span>
+  <span class="meta">一行三列</span>
+</div>
+
+<div class="grid">
+
+  <!-- 1. 项目列表 + 分类切换 -->
+  <div class="variant">
+    <div class="variant-label"><b>P-01</b> 项目列表 · 分类一键切换</div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">https://your-site.dev/#projects</span>
+      </div>
+      <div class="screen">
+        <div class="list">
+          <div class="crumb">~/home / <b style="color:#00ffc8">projects</b></div>
+          <h2>SIGNAL.ARCHIVE <span style="color:#5a6b85;font-size:10px">— 已捕获信号 12</span></h2>
+          <div class="tabs">
+            <div class="tab on">[PROJECTS] 项目</div>
+            <div class="tab">[WORKS] 作品</div>
+          </div>
+          <div class="proj-list">
+            <div class="proj-card">
+              <div class="cover"><span>COVER · 001</span></div>
+              <div class="row1">
+                <div class="title">轨道信号检测自动化系统</div>
+                <div class="views">◉ 1.2k</div>
+              </div>
+              <div class="sum">基于机械臂 + 继电器矩阵的轨道信号自动测试平台，多线程架构。</div>
+              <div class="techs">
+                <span class="tech">Python</span><span class="tech">串口通信</span><span class="tech">多线程</span>
+              </div>
+            </div>
+            <div class="proj-card">
+              <div class="cover"><span>COVER · 002</span></div>
+              <div class="row1">
+                <div class="title">智能列车平稳测试仪</div>
+                <div class="views">◉ 864</div>
+              </div>
+              <div class="sum">嵌入式传感器采集 + 上位机分析，输出平稳性报告。</div>
+              <div class="techs">
+                <span class="tech">C++</span><span class="tech">传感器</span><span class="tech">Python</span>
+              </div>
+            </div>
+            <div class="proj-card">
+              <div class="cover"><span>COVER · 003</span></div>
+              <div class="row1">
+                <div class="title">WiFi 耳勺视觉助手</div>
+                <div class="views">◉ 512</div>
+              </div>
+              <div class="sum">OpenCV 实时画面处理 + 手机端预览，硬件交互。</div>
+              <div class="techs">
+                <span class="tech">OpenCV</span><span class="tech">ESP32</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <b>关键点：</b>Tab 不跳转，前端切换数据源；卡片切角 + 微亮 hover；右侧浏览量用 mono 字体。
+    </div>
+  </div>
+
+  <!-- 2. 项目详情 -->
+  <div class="variant">
+    <div class="variant-label"><b>P-02</b> 项目详情 · 信号解码视图</div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">https://your-site.dev/project/001</span>
+      </div>
+      <div class="screen">
+        <div class="detail">
+          <div class="back">~/projects / <b>001</b></div>
+          <h1>轨道信号检测自动化系统</h1>
+          <div class="meta-row">
+            <span>ID: PRJ-001</span>
+            <span>·</span>
+            <span>2026-08-12</span>
+            <span>·</span>
+            <span><span class="led"></span> 已上线</span>
+          </div>
+          <div class="cover"><span>[ COVER IMAGE ]</span></div>
+          <div class="techs">
+            <span class="tech">Python</span>
+            <span class="tech">FastAPI</span>
+            <span class="tech">串口通信</span>
+            <span class="tech">多线程</span>
+            <span class="tech">继电器矩阵</span>
+          </div>
+          <div class="body">
+            <h4>// 项目概述</h4>
+            <p>针对铁路信号电源混电绝缘测试场景，构建一套自动化测试系统。通过 <code>机械臂</code> 完成物理接线，继电器矩阵切换测试回路，多线程并发采集多通道数据。</p>
+            <h4>// 核心亮点</h4>
+            <p>· 测试效率从人工 2 小时缩短至 15 分钟<br>
+            · 自动生成测试报告，支持导出 PDF<br>
+            · 异常数据自动标记与告警</p>
+          </div>
+          <div class="links">
+            <span class="lnk primary">▶ 在线演示</span>
+            <span class="lnk ghost">◈ GitHub</span>
+          </div>
+          <div class="foot">
+            <span>VIEWS: 1,204</span>
+            <span>UPDATED: 2026-09-01</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <b>关键点：</b>面包屑路径风；正文 Markdown 渲染；底部固定浏览量与更新时间。
+    </div>
+  </div>
+
+  <!-- 3. 404 -->
+  <div class="variant">
+    <div class="variant-label"><b>P-03</b> 404 · 信号未捕获</div>
+    <div class="browser">
+      <div class="browser-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="url">https://your-site.dev/unknown</span>
+      </div>
+      <div class="screen">
+        <div class="nf">
+          <div class="radar-fail">
+            <div class="sweep-fail"></div>
+          </div>
+          <div class="code">404</div>
+          <div class="label">// SIGNAL.LOST // 信号未捕获</div>
+          <svg class="wave" viewBox="0 0 180 24" preserveAspectRatio="none">
+            <polyline fill="none" stroke="#00ffc8" stroke-width="1"
+              points="0,12 10,12 15,4 20,20 25,12 35,12 40,8 45,16 50,12 70,12 75,2 80,22 85,12 110,12 115,9 120,15 125,12 180,12" opacity="0.6"/>
+          </svg>
+          <div class="desc">
+            雷达扫描失败。<br>
+            你访问的坐标不存在于当前频段。
+          </div>
+          <div class="btn">← 返回主信号</div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <b>关键点：</b>雷达扫描失败动画（扫描线停在 135° + 闪烁红光）；404 实色红字；文案保持克制。
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
