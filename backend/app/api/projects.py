@@ -31,7 +31,7 @@ def get_projects(
     # BUG-12 修复：解析项目图片JSON
     result = []
     for project in projects:
-        project_dict = ProjectListResponse.model_validate(project).model_dump()
+        project_dict = project.model_dump()
         if project.project_images:
             try:
                 project_dict['project_images'] = json.loads(project.project_images)
@@ -59,7 +59,7 @@ def get_featured_projects(
     # BUG-12 修复：解析项目图片JSON
     result = []
     for project in projects:
-        project_dict = ProjectListResponse.model_validate(project).model_dump()
+        project_dict = project.model_dump()
         if project.project_images:
             try:
                 project_dict['project_images'] = json.loads(project.project_images)
@@ -85,11 +85,11 @@ def get_project_detail(project_id: int, session: Session = Depends(get_session))
         session.refresh(project)
 
     # BUG-12 修复：解析项目图片JSON
-    result = ProjectResponse.model_validate(project)
+    project_dict = project.model_dump()
     if project.project_images:
         try:
-            result.project_images = json.loads(project.project_images)
+            project_dict['project_images'] = json.loads(project.project_images)
         except:
-            result.project_images = None
+            project_dict['project_images'] = None
 
-    return result
+    return ProjectResponse(**project_dict)

@@ -18,11 +18,11 @@ def get_profile(session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="个人信息未配置")
 
     # BUG-11 修复：解析雷达图技能JSON
-    result = ProfileResponse.model_validate(profile)
+    profile_dict = profile.model_dump()
     if profile.radar_skills:
         try:
-            result.radar_skills = json.loads(profile.radar_skills)
+            profile_dict['radar_skills'] = json.loads(profile.radar_skills)
         except:
-            result.radar_skills = None
+            profile_dict['radar_skills'] = None
 
-    return result
+    return ProfileResponse(**profile_dict)

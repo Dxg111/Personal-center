@@ -34,7 +34,7 @@ def get_admin_projects(
     # BUG-12 修复：解析项目图片JSON
     result = []
     for project in projects:
-        project_dict = ProjectListResponse.model_validate(project).model_dump()
+        project_dict = project.model_dump()
         if project.project_images:
             try:
                 project_dict['project_images'] = json.loads(project.project_images)
@@ -57,14 +57,14 @@ def get_admin_project_detail(
         raise HTTPException(status_code=404, detail="项目不存在")
 
     # BUG-12 修复：解析项目图片JSON
-    result = ProjectResponse.model_validate(db_project)
+    project_dict = db_project.model_dump()
     if db_project.project_images:
         try:
-            result.project_images = json.loads(db_project.project_images)
+            project_dict['project_images'] = json.loads(db_project.project_images)
         except:
-            result.project_images = None
+            project_dict['project_images'] = None
 
-    return result
+    return ProjectResponse(**project_dict)
 
 
 @router.post("/projects", response_model=ProjectResponse)
@@ -86,14 +86,14 @@ def create_project(
     session.refresh(db_project)
 
     # BUG-12 修复：返回时解析JSON
-    result = ProjectResponse.model_validate(db_project)
+    project_dict = db_project.model_dump()
     if db_project.project_images:
         try:
-            result.project_images = json.loads(db_project.project_images)
+            project_dict['project_images'] = json.loads(db_project.project_images)
         except:
-            result.project_images = None
+            project_dict['project_images'] = None
 
-    return result
+    return ProjectResponse(**project_dict)
 
 
 @router.put("/projects/{project_id}", response_model=ProjectResponse)
@@ -124,14 +124,14 @@ def update_project(
     session.refresh(db_project)
 
     # BUG-12 修复：返回时解析JSON
-    result = ProjectResponse.model_validate(db_project)
+    project_dict = db_project.model_dump()
     if db_project.project_images:
         try:
-            result.project_images = json.loads(db_project.project_images)
+            project_dict['project_images'] = json.loads(db_project.project_images)
         except:
-            result.project_images = None
+            project_dict['project_images'] = None
 
-    return result
+    return ProjectResponse(**project_dict)
 
 
 @router.delete("/projects/{project_id}")
@@ -169,14 +169,14 @@ def toggle_publish(
     session.refresh(db_project)
 
     # BUG-12 修复：返回时解析JSON
-    result = ProjectResponse.model_validate(db_project)
+    project_dict = db_project.model_dump()
     if db_project.project_images:
         try:
-            result.project_images = json.loads(db_project.project_images)
+            project_dict['project_images'] = json.loads(db_project.project_images)
         except:
-            result.project_images = None
+            project_dict['project_images'] = None
 
-    return result
+    return ProjectResponse(**project_dict)
 
 
 # ============ 个人信息管理 ============
@@ -194,14 +194,14 @@ def get_admin_profile(
         raise HTTPException(status_code=404, detail="个人信息未配置")
 
     # BUG-11 修复：解析雷达图技能JSON
-    result = ProfileResponse.model_validate(profile)
+    profile_dict = profile.model_dump()
     if profile.radar_skills:
         try:
-            result.radar_skills = json.loads(profile.radar_skills)
+            profile_dict['radar_skills'] = json.loads(profile.radar_skills)
         except:
-            result.radar_skills = None
+            profile_dict['radar_skills'] = None
 
-    return result
+    return ProfileResponse(**profile_dict)
 
 
 @router.put("/profile", response_model=ProfileResponse)
@@ -233,14 +233,14 @@ def update_profile(
     session.refresh(profile)
 
     # BUG-11 修复：返回时解析JSON
-    result = ProfileResponse.model_validate(profile)
+    profile_dict = profile.model_dump()
     if profile.radar_skills:
         try:
-            result.radar_skills = json.loads(profile.radar_skills)
+            profile_dict['radar_skills'] = json.loads(profile.radar_skills)
         except:
-            result.radar_skills = None
+            profile_dict['radar_skills'] = None
 
-    return result
+    return ProfileResponse(**profile_dict)
 
 
 # ============ 文件上传 ============
