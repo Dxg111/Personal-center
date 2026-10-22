@@ -5,6 +5,7 @@ from datetime import datetime
 from app.database import get_session
 from app.models import Project
 from app.schemas import ProjectResponse, ProjectListResponse
+import json
 
 router = APIRouter(prefix="/api/projects", tags=["项目（公开）"])
 
@@ -27,7 +28,18 @@ def get_projects(
     statement = statement.order_by(Project.sort_order, Project.created_at.desc())
     projects = session.exec(statement).all()
 
-    return projects
+    # BUG-12 修复：解析项目图片JSON
+    result = []
+    for project in projects:
+        project_dict = ProjectListResponse.model_validate(project).model_dump()
+        if project.project_images:
+            try:
+                project_dict['project_images'] = json.loads(project.project_images)
+            except:
+                project_dict['project_images'] = None
+        result.append(ProjectListResponse(**project_dict))
+
+    return result
 
 
 @router.get("/featured", response_model=List[ProjectListResponse])
@@ -43,7 +55,19 @@ def get_featured_projects(
         .limit(limit)
     )
     projects = session.exec(statement).all()
-    return projects
+
+    # BUG-12 修复：解析项目图片JSON
+    result = []
+    for project in projects:
+        project_dict = ProjectListResponse.model_validate(project).model_dump()
+        if project.project_images:
+            try:
+                project_dict['project_images'] = json.loads(project.project_images)
+            except:
+                project_dict['project_images'] = None
+        result.append(ProjectListResponse(**project_dict))
+
+    return result
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
@@ -60,4 +84,12 @@ def get_project_detail(project_id: int, session: Session = Depends(get_session))
         session.commit()
         session.refresh(project)
 
-    return project
+    # BUG-12 修复：解析项目图片JSON
+    result = ProjectResponse.model_validate(project)
+    if project.project_images:
+        try:
+            result.project_images = json.loads(project.project_images)
+        except:
+            result.project_images = None
+
+    return result

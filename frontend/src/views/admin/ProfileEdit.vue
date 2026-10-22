@@ -125,6 +125,58 @@
             />
           </div>
 
+          <!-- BUG-11 修复：雷达图技能标签管理 -->
+          <div class="row">
+            <label class="block font-mono text-xs text-text-dim mb-2">// 雷达图技能标签 RADAR_SKILLS</label>
+            <div class="border border-line p-4 space-y-3">
+              <div
+                v-for="(skill, index) in form.radar_skills"
+                :key="index"
+                class="flex gap-2 items-center"
+              >
+                <input
+                  v-model="skill.name"
+                  type="text"
+                  placeholder="技能名称"
+                  class="flex-1 bg-[#050810] border border-line px-3 py-2 text-text-bright text-sm outline-none focus:border-neon-yellow"
+                />
+                <input
+                  v-model="skill.color"
+                  type="color"
+                  class="w-16 h-10 border border-line cursor-pointer"
+                />
+                <select
+                  v-model="skill.position"
+                  class="bg-[#050810] border border-line px-3 py-2 text-text-bright text-sm outline-none focus:border-neon-yellow"
+                >
+                  <option value="top">顶部</option>
+                  <option value="top-right">右上</option>
+                  <option value="bottom-right">右下</option>
+                  <option value="bottom">底部</option>
+                  <option value="bottom-left">左下</option>
+                  <option value="top-left">左上</option>
+                </select>
+                <button
+                  type="button"
+                  @click="removeSkill(index)"
+                  class="px-3 py-2 text-red-400 border border-red-400/30 hover:bg-red-400/10 text-sm"
+                >
+                  删除
+                </button>
+              </div>
+              <button
+                type="button"
+                @click="addSkill"
+                class="w-full py-2 text-center font-mono text-sm text-neon-green border border-neon-green/30 hover:bg-neon-green/10 transition-colors"
+              >
+                + 添加技能标签
+              </button>
+            </div>
+            <div class="font-mono text-xs text-text-dim mt-1">
+              提示：最多6个技能标签，将显示在首页雷达图周围
+            </div>
+          </div>
+
           <!-- 底部操作按钮 -->
           <div class="actions flex gap-4 pt-6 border-t border-line bg-bg-panel -mx-8 px-8 -mb-8 py-4 sticky bottom-0">
             <button
@@ -171,7 +223,9 @@ const form = ref({
   typing_slogan: '',
   wechat: null,
   email: null,
-  github_url: null
+  github_url: null,
+  // BUG-11 修复：雷达图技能标签
+  radar_skills: []
 })
 
 // 加载个人信息
@@ -186,7 +240,15 @@ const fetchProfile = async () => {
       typing_slogan: profile.typing_slogan,
       wechat: profile.wechat,
       email: profile.email,
-      github_url: profile.github_url
+      github_url: profile.github_url,
+      // BUG-11 修复：加载雷达图技能标签
+      radar_skills: profile.radar_skills || [
+        { name: '后端开发', color: '#00ffc8', position: 'top' },
+        { name: '自动化', color: '#4a9fff', position: 'top-right' },
+        { name: '机器视觉', color: '#ffb020', position: 'bottom-right' },
+        { name: '硬件交互', color: '#ff4d6d', position: 'bottom' },
+        { name: '前端', color: '#a78bfa', position: 'top-left' }
+      ]
     }
   } catch (err) {
     error.value = err.detail || '加载个人信息失败'
@@ -229,6 +291,24 @@ const handleSubmit = async () => {
   } finally {
     saving.value = false
   }
+}
+
+// BUG-11 修复：添加技能标签
+const addSkill = () => {
+  if (form.value.radar_skills.length >= 6) {
+    alert('最多只能添加6个技能标签')
+    return
+  }
+  form.value.radar_skills.push({
+    name: '',
+    color: '#00ffc8',
+    position: 'top'
+  })
+}
+
+// BUG-11 修复：删除技能标签
+const removeSkill = (index) => {
+  form.value.radar_skills.splice(index, 1)
 }
 
 onMounted(() => {

@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.models import Profile
 from app.schemas import ProfileResponse
+import json
 
 router = APIRouter(prefix="/api/profile", tags=["个人信息（公开）"])
 
@@ -16,4 +17,12 @@ def get_profile(session: Session = Depends(get_session)):
     if not profile:
         raise HTTPException(status_code=404, detail="个人信息未配置")
 
-    return profile
+    # BUG-11 修复：解析雷达图技能JSON
+    result = ProfileResponse.model_validate(profile)
+    if profile.radar_skills:
+        try:
+            result.radar_skills = json.loads(profile.radar_skills)
+        except:
+            result.radar_skills = None
+
+    return result

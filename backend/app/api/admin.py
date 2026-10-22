@@ -15,6 +15,7 @@ from app.schemas import (
 )
 from app.utils.auth import get_current_user
 from app.utils.upload import save_upload_file
+import json
 
 router = APIRouter(prefix="/api/admin", tags=["管理端"])
 
@@ -29,7 +30,19 @@ def get_admin_projects(
     """获取后台项目列表（包含草稿）"""
     statement = select(Project).order_by(Project.created_at.desc())
     projects = session.exec(statement).all()
-    return projects
+
+    # BUG-12 修复：解析项目图片JSON
+    result = []
+    for project in projects:
+        project_dict = ProjectListResponse.model_validate(project).model_dump()
+        if project.project_images:
+            try:
+                project_dict['project_images'] = json.loads(project.project_images)
+            except:
+                project_dict['project_images'] = None
+        result.append(ProjectListResponse(**project_dict))
+
+    return result
 
 
 @router.get("/projects/{project_id}", response_model=ProjectResponse)
@@ -42,7 +55,16 @@ def get_admin_project_detail(
     db_project = session.get(Project, project_id)
     if not db_project:
         raise HTTPException(status_code=404, detail="项目不存在")
-    return db_project
+
+    # BUG-12 修复：解析项目图片JSON
+    result = ProjectResponse.model_validate(db_project)
+    if db_project.project_images:
+        try:
+            result.project_images = json.loads(db_project.project_images)
+        except:
+            result.project_images = None
+
+    return result
 
 
 @router.post("/projects", response_model=ProjectResponse)
@@ -52,11 +74,26 @@ def create_project(
     current_user: AdminUser = Depends(get_current_user)
 ):
     """新建项目"""
-    db_project = Project(**project.model_dump())
+    project_data = project.model_dump()
+
+    # BUG-12 修复：将项目图片列表转换为JSON字符串存储
+    if project_data.get('project_images'):
+        project_data['project_images'] = json.dumps(project_data['project_images'])
+
+    db_project = Project(**project_data)
     session.add(db_project)
     session.commit()
     session.refresh(db_project)
-    return db_project
+
+    # BUG-12 修复：返回时解析JSON
+    result = ProjectResponse.model_validate(db_project)
+    if db_project.project_images:
+        try:
+            result.project_images = json.loads(db_project.project_images)
+        except:
+            result.project_images = None
+
+    return result
 
 
 @router.put("/projects/{project_id}", response_model=ProjectResponse)
@@ -72,14 +109,29 @@ def update_project(
         raise HTTPException(status_code=404, detail="项目不存在")
 
     # 更新字段
-    for key, value in project.model_dump(exclude_unset=True).items():
+    project_data = project.model_dump(exclude_unset=True)
+
+    # BUG-12 修复：将项目图片列表转换为JSON字符串存储
+    if 'project_images' in project_data and project_data['project_images'] is not None:
+        project_data['project_images'] = json.dumps(project_data['project_images'])
+
+    for key, value in project_data.items():
         setattr(db_project, key, value)
 
     db_project.updated_at = datetime.utcnow()
     session.add(db_project)
     session.commit()
     session.refresh(db_project)
-    return db_project
+
+    # BUG-12 修复：返回时解析JSON
+    result = ProjectResponse.model_validate(db_project)
+    if db_project.project_images:
+        try:
+            result.project_images = json.loads(db_project.project_images)
+        except:
+            result.project_images = None
+
+    return result
 
 
 @router.delete("/projects/{project_id}")
@@ -115,7 +167,16 @@ def toggle_publish(
     session.add(db_project)
     session.commit()
     session.refresh(db_project)
-    return db_project
+
+    # BUG-12 修复：返回时解析JSON
+    result = ProjectResponse.model_validate(db_project)
+    if db_project.project_images:
+        try:
+            result.project_images = json.loads(db_project.project_images)
+        except:
+            result.project_images = None
+
+    return result
 
 
 # ============ 个人信息管理 ============
@@ -132,7 +193,15 @@ def get_admin_profile(
     if not profile:
         raise HTTPException(status_code=404, detail="个人信息未配置")
 
-    return profile
+    # BUG-11 修复：解析雷达图技能JSON
+    result = ProfileResponse.model_validate(profile)
+    if profile.radar_skills:
+        try:
+            result.radar_skills = json.loads(profile.radar_skills)
+        except:
+            result.radar_skills = None
+
+    return result
 
 
 @router.put("/profile", response_model=ProfileResponse)
@@ -149,14 +218,29 @@ def update_profile(
         raise HTTPException(status_code=404, detail="个人信息未配置")
 
     # 更新字段
-    for key, value in profile_data.model_dump().items():
+    update_data = profile_data.model_dump()
+
+    # BUG-11 修复：将雷达图技能列表转换为JSON字符串存储
+    if 'radar_skills' in update_data and update_data['radar_skills'] is not None:
+        update_data['radar_skills'] = json.dumps([skill.dict() for skill in profile_data.radar_skills])
+
+    for key, value in update_data.items():
         setattr(profile, key, value)
 
     profile.updated_at = datetime.utcnow()
     session.add(profile)
     session.commit()
     session.refresh(profile)
-    return profile
+
+    # BUG-11 修复：返回时解析JSON
+    result = ProfileResponse.model_validate(profile)
+    if profile.radar_skills:
+        try:
+            result.radar_skills = json.loads(profile.radar_skills)
+        except:
+            result.radar_skills = None
+
+    return result
 
 
 # ============ 文件上传 ============

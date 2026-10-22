@@ -113,6 +113,54 @@
             </div>
           </div>
 
+          <!-- BUG-12 修复：项目多图上传 -->
+          <div class="row">
+            <label class="block font-mono text-xs text-text-dim mb-2">// 项目图片（多图） PROJECT_IMAGES</label>
+            <div class="border border-line p-4">
+              <input
+                type="file"
+                @change="handleMultipleImages"
+                accept="image/*"
+                multiple
+                class="hidden"
+                ref="multiImageInput"
+              />
+              <button
+                type="button"
+                @click="$refs.multiImageInput.click()"
+                class="w-full py-3 text-center font-mono text-sm text-neon-green border border-neon-green/30 hover:bg-neon-green/10 transition-colors"
+              >
+                + 添加项目图片（可多选）
+              </button>
+              <div v-if="multiUploadProgress" class="mt-2 font-mono text-xs text-neon-yellow text-center">
+                上传中... {{ multiUploadProgress }}%
+              </div>
+              <!-- 图片列表 -->
+              <div v-if="form.project_images && form.project_images.length > 0" class="mt-4 grid grid-cols-3 gap-3">
+                <div
+                  v-for="(img, index) in form.project_images"
+                  :key="index"
+                  class="relative border border-line group"
+                >
+                  <img :src="img" :alt="`图片${index+1}`" class="w-full h-32 object-cover" />
+                  <button
+                    type="button"
+                    @click="removeProjectImage(index)"
+                    class="absolute top-1 right-1 w-6 h-6 bg-red-500/80 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                  <div class="absolute bottom-0 left-0 right-0 bg-black/60 text-center py-1 text-xs text-white font-mono">
+                    {{ index + 1 }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="font-mono text-xs text-text-dim mt-1">
+              提示：支持多张图片，详情页将显示轮播图
+            </div>
+          </div>
+
           <!-- 链接 -->
           <div class="grid grid-cols-2 gap-4">
             <div class="row">
@@ -231,6 +279,8 @@ const saving = ref(false)
 const uploadProgress = ref(0)
 
 const fileInput = ref(null)
+const multiImageInput = ref(null) // BUG-12 修复：多图上传引用
+const multiUploadProgress = ref(0) // BUG-12 修复：多图上传进度
 const contentArea = ref(null)
 
 // 存储原始项目数据（用于判断当前发布状态）
@@ -247,7 +297,8 @@ const form = ref({
   demo_url: null,
   github_url: null,
   category: 'project',
-  sort_order: 999
+  sort_order: 999,
+  project_images: [] // BUG-12 修复：项目图片数组
 })
 
 // 加载项目数据（编辑模式）
@@ -266,7 +317,8 @@ const fetchProject = async () => {
       demo_url: project.demo_url,
       github_url: project.github_url,
       category: project.category,
-      sort_order: project.sort_order
+      sort_order: project.sort_order,
+      project_images: project.project_images || [] // BUG-12 修复：加载项目图片
     }
   } catch (err) {
     error.value = err.detail || '加载项目失败'
@@ -295,6 +347,48 @@ const handleFileChange = async (e) => {
     alert(err.detail || '上传失败')
     uploadProgress.value = 0
   }
+}
+
+// BUG-12 修复：处理多图上传
+const handleMultipleImages = async (e) => {
+  const files = Array.from(e.target.files)
+  if (files.length === 0) return
+
+  // 验证文件大小
+  for (const file of files) {
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`文件 ${file.name} 大小超过 5MB`)
+      return
+    }
+  }
+
+  try {
+    multiUploadProgress.value = 10
+    const uploadedUrls = []
+
+    for (let i = 0; i < files.length; i++) {
+      const result = await uploadImage(files[i])
+      uploadedUrls.push(result.url)
+      multiUploadProgress.value = Math.floor((i + 1) / files.length * 100)
+    }
+
+    // 添加到现有图片数组
+    if (!form.value.project_images) {
+      form.value.project_images = []
+    }
+    form.value.project_images.push(...uploadedUrls)
+
+    multiUploadProgress.value = 0
+    e.target.value = '' // 清空输入框，允许重复上传
+  } catch (err) {
+    alert(err.detail || '上传失败')
+    multiUploadProgress.value = 0
+  }
+}
+
+// BUG-12 修复：删除项目图片
+const removeProjectImage = (index) => {
+  form.value.project_images.splice(index, 1)
 }
 
 // 插入 Markdown 格式

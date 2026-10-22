@@ -1,5 +1,5 @@
 from typing import Optional
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Column, Text
 from datetime import datetime
 
 
@@ -15,4 +15,6 @@ class Profile(SQLModel, table=True):
     wechat: Optional[str] = Field(default=None, max_length=100)
     email: Optional[str] = Field(default=None, max_length=100)
     github_url: Optional[str] = Field(default=None, max_length=500)
+    # BUG-11 修复：雷达图技能标签（JSON格式存储）
+    radar_skills: Optional[str] = Field(default=None, sa_column=Column(Text))
     updated_at: datetime = Field(default_factory=datetime.utcnow)

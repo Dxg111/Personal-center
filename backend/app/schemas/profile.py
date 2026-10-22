@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -14,6 +14,13 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class RadarSkill(BaseModel):
+    """雷达图技能"""
+    name: str
+    color: str
+    position: str  # top, top-right, bottom-right, bottom, bottom-left, top-left
+
+
 class ProfileResponse(BaseModel):
     """个人信息响应"""
     id: int
@@ -24,6 +31,8 @@ class ProfileResponse(BaseModel):
     wechat: Optional[str] = None
     email: Optional[str] = None
     github_url: Optional[str] = None
+    # BUG-11 修复：雷达图技能标签
+    radar_skills: Optional[List[RadarSkill]] = None
 
 
 class ProfileUpdate(BaseModel):
@@ -35,3 +44,5 @@ class ProfileUpdate(BaseModel):
     wechat: Optional[str] = Field(default=None, max_length=100)
     email: Optional[str] = Field(default=None, max_length=100)
     github_url: Optional[str] = Field(default=None, max_length=500)
+    # BUG-11 修复：雷达图技能标签
+    radar_skills: Optional[List[RadarSkill]] = None

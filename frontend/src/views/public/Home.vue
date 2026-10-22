@@ -64,7 +64,7 @@
         </div>
       </div>
 
-      <!-- 右侧雷达 -->
+      <!-- 右侧雷达 BUG-11 修复：动态显示技能标签 -->
       <div class="hero-right relative h-[420px] hidden md:block">
         <div class="radar-wrap absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] h-[260px]">
           <div class="radar w-full h-full rounded-full border border-neon-green/15 relative radar-bg shadow-inner">
@@ -72,26 +72,21 @@
             <div class="sweep absolute inset-0 rounded-full animate-sweep sweep-gradient"></div>
             <div class="radar-center absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-neon-green shadow-[0_0_12px_#00ffc8]"></div>
           </div>
-          <!-- 环绕技术标签 -->
-          <div class="orbit-tech absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 text-xs text-text-bright">
-            <span class="dot w-2 h-2 rounded-full bg-neon-green shadow-[0_0_8px_#00ffc8]"></span>
-            <span>后端开发</span>
-          </div>
-          <div class="orbit-tech absolute top-8 -right-[70px] flex items-center gap-2 text-xs text-text-bright">
-            <span class="dot w-2 h-2 rounded-full bg-[#4a9fff] shadow-[0_0_8px_#4a9fff]"></span>
-            <span>自动化</span>
-          </div>
-          <div class="orbit-tech absolute bottom-10 -right-20 flex items-center gap-2 text-xs text-text-bright">
-            <span class="dot w-2 h-2 rounded-full bg-neon-yellow shadow-[0_0_8px_#ffb020]"></span>
-            <span>机器视觉</span>
-          </div>
-          <div class="orbit-tech absolute -bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2 text-xs text-text-bright">
-            <span class="dot w-2 h-2 rounded-full bg-[#ff4d6d] shadow-[0_0_8px_#ff4d6d]"></span>
-            <span>硬件交互</span>
-          </div>
-          <div class="orbit-tech absolute top-[70px] -left-[70px] flex items-center gap-2 text-xs text-text-bright">
-            <span class="dot w-2 h-2 rounded-full bg-[#a78bfa] shadow-[0_0_8px_#a78bfa]"></span>
-            <span>前端</span>
+          <!-- BUG-11 修复：环绕技术标签（动态） -->
+          <div
+            v-for="skill in radarSkills"
+            :key="skill.name"
+            class="orbit-tech absolute flex items-center gap-2 text-xs text-text-bright"
+            :style="getSkillPosition(skill.position)"
+          >
+            <span
+              class="dot w-2 h-2 rounded-full"
+              :style="{
+                backgroundColor: skill.color,
+                boxShadow: `0 0 8px ${skill.color}`
+              }"
+            ></span>
+            <span>{{ skill.name }}</span>
           </div>
         </div>
       </div>
@@ -279,6 +274,34 @@ const typeWriter = () => {
 
 // 技术标签
 const techTags = ref(['Python', 'Vue3', 'FastAPI', 'OpenCV', '工业自动化'])
+
+// BUG-11 修复：雷达图技能标签（动态）
+const radarSkills = computed(() => {
+  if (profile.value?.radar_skills && Array.isArray(profile.value.radar_skills)) {
+    return profile.value.radar_skills
+  }
+  // 默认技能标签（如果后台未配置）
+  return [
+    { name: '后端开发', color: '#00ffc8', position: 'top' },
+    { name: '自动化', color: '#4a9fff', position: 'top-right' },
+    { name: '机器视觉', color: '#ffb020', position: 'bottom-right' },
+    { name: '硬件交互', color: '#ff4d6d', position: 'bottom' },
+    { name: '前端', color: '#a78bfa', position: 'top-left' }
+  ]
+})
+
+// BUG-11 修复：根据位置计算技能标签坐标
+const getSkillPosition = (position) => {
+  const positions = {
+    'top': { top: '-12px', left: '50%', transform: 'translateX(-50%)' },
+    'top-right': { top: '32px', right: '-70px' },
+    'bottom-right': { bottom: '40px', right: '-80px' },
+    'bottom': { bottom: '-20px', left: '50%', transform: 'translateX(-50%)' },
+    'bottom-left': { bottom: '40px', left: '-70px' },
+    'top-left': { top: '70px', left: '-70px' }
+  }
+  return positions[position] || positions['top']
+}
 
 // 分类切换
 const categories = [

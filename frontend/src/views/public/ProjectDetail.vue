@@ -45,22 +45,64 @@
         <span>{{ formatDate(project.created_at) }}</span>
       </div>
 
-      <!-- 封面图 BUG-13 修复：移动端高度调整 -->
+      <!-- 封面图/轮播图 BUG-12 修复：支持多图轮播 -->
       <div
-        v-if="project.cover_image"
-        class="h-48 md:h-60 mb-6 bg-gradient-to-br from-bg-panel to-bg-panel-2 border border-line flex items-center justify-center"
+        v-if="hasImages"
+        class="relative h-48 md:h-80 mb-6 bg-gradient-to-br from-bg-panel to-bg-panel-2 border border-line flex items-center justify-center overflow-hidden"
       >
+        <!-- 当前显示的图片 -->
         <img
-          :src="project.cover_image"
+          :src="currentImage"
           :alt="project.title"
-          class="max-h-full max-w-full object-contain"
+          class="max-h-full max-w-full object-contain transition-opacity duration-300"
         />
+
+        <!-- 多图时显示轮播控制 -->
+        <template v-if="allImages.length > 1">
+          <!-- 左箭头 -->
+          <button
+            @click="prevImage"
+            class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 border border-neon-green/30 flex items-center justify-center transition-all"
+            style="clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));"
+          >
+            <span class="text-neon-green text-xl">‹</span>
+          </button>
+
+          <!-- 右箭头 -->
+          <button
+            @click="nextImage"
+            class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 border border-neon-green/30 flex items-center justify-center transition-all"
+            style="clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));"
+          >
+            <span class="text-neon-green text-xl">›</span>
+          </button>
+
+          <!-- 指示器 -->
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            <button
+              v-for="(img, index) in allImages"
+              :key="index"
+              @click="currentImageIndex = index"
+              :class="[
+                'w-2 h-2 rounded-full transition-all',
+                index === currentImageIndex
+                  ? 'bg-neon-green w-6'
+                  : 'bg-white/30 hover:bg-white/50'
+              ]"
+            ></button>
+          </div>
+
+          <!-- 图片计数 -->
+          <div class="absolute top-4 right-4 px-3 py-1 bg-black/50 border border-neon-green/30 font-mono text-xs text-neon-green">
+            {{ currentImageIndex + 1 }} / {{ allImages.length }}
+          </div>
+        </template>
       </div>
       <div
         v-else
         class="h-48 md:h-60 mb-6 bg-gradient-to-br from-bg-panel to-bg-panel-2 border border-line flex items-center justify-center"
       >
-        <span class="font-mono text-xs text-text-dim">[ COVER IMAGE ]</span>
+        <span class="font-mono text-xs text-text-dim">[ NO IMAGE ]</span>
       </div>
 
       <!-- 技术栈 -->
@@ -122,6 +164,47 @@ const route = useRoute()
 const project = ref(null)
 const loading = ref(true)
 const error = ref(null)
+
+// BUG-12 修复：图片轮播
+const currentImageIndex = ref(0)
+
+// BUG-12 修复：合并封面图和项目图片数组
+const allImages = computed(() => {
+  if (!project.value) return []
+
+  const images = []
+
+  // 如果有项目图片数组，优先使用
+  if (project.value.project_images && Array.isArray(project.value.project_images) && project.value.project_images.length > 0) {
+    images.push(...project.value.project_images)
+  } else if (project.value.cover_image) {
+    // 否则使用封面图
+    images.push(project.value.cover_image)
+  }
+
+  return images
+})
+
+// BUG-12 修复：是否有图片
+const hasImages = computed(() => allImages.value.length > 0)
+
+// BUG-12 修复：当前显示的图片
+const currentImage = computed(() => {
+  if (allImages.value.length === 0) return ''
+  return allImages.value[currentImageIndex.value]
+})
+
+// BUG-12 修复：上一张图片
+const prevImage = () => {
+  if (allImages.value.length <= 1) return
+  currentImageIndex.value = (currentImageIndex.value - 1 + allImages.value.length) % allImages.value.length
+}
+
+// BUG-12 修复：下一张图片
+const nextImage = () => {
+  if (allImages.value.length <= 1) return
+  currentImageIndex.value = (currentImageIndex.value + 1) % allImages.value.length
+}
 
 // BUG-05 修复：鼠标光斑效果
 const glowRef = ref(null)

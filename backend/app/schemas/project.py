@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 from datetime import datetime
 
@@ -9,6 +9,8 @@ class ProjectBase(BaseModel):
     summary: str = Field(max_length=500)
     content: str
     cover_image: Optional[str] = Field(default=None, max_length=500)
+    # BUG-12 修复：支持多张项目图片
+    project_images: Optional[List[str]] = None
     tech_stack: str = Field(default="", max_length=500)
     demo_url: Optional[str] = Field(default=None, max_length=500)
     github_url: Optional[str] = Field(default=None, max_length=500)
@@ -41,6 +43,8 @@ class ProjectListResponse(BaseModel):
     title: str
     summary: str
     cover_image: Optional[str]
+    # BUG-12 修复：支持多张项目图片
+    project_images: Optional[List[str]]
     tech_stack: str
     category: str
     is_published: bool

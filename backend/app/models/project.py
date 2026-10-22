@@ -12,6 +12,8 @@ class Project(SQLModel, table=True):
     summary: str = Field(max_length=500)
     content: str = Field(sa_column=Column(Text))
     cover_image: Optional[str] = Field(default=None, max_length=500)
+    # BUG-12 修复：支持多张项目图片（JSON数组格式）
+    project_images: Optional[str] = Field(default=None, sa_column=Column(Text))
     tech_stack: str = Field(default="", max_length=500)  # 逗号分隔
     demo_url: Optional[str] = Field(default=None, max_length=500)
     github_url: Optional[str] = Field(default=None, max_length=500)
