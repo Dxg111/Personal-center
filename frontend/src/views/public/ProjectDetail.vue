@@ -1,0 +1,265 @@
+<template>
+  <div class="project-detail min-h-screen bg-[#050810]">
+    <!-- 全局网格背景 -->
+    <div class="fixed inset-0 z-0 pointer-events-none bg-grid"></div>
+
+    <!-- 鼠标光斑 (BUG-05 修复) -->
+    <div
+      ref="glowRef"
+      class="fixed w-[500px] h-[500px] rounded-full pointer-events-none z-10 transition-opacity duration-300"
+      :style="glowStyle"
+    ></div>
+
+    <!-- 返回按钮 -->
+    <div class="relative z-20 max-w-4xl mx-auto px-4 md:px-8 pt-8">
+      <button
+        @click="$router.push('/')"
+        class="font-mono text-xs text-text-dim hover:text-neon-green transition-colors"
+      >
+        ← 返回首页
+      </button>
+    </div>
+
+    <!-- 主内容 -->
+    <div v-if="loading" class="relative z-20 max-w-4xl mx-auto px-4 md:px-8 py-16 text-center">
+      <div class="font-mono text-neon-green">加载中...</div>
+    </div>
+
+    <div v-else-if="error" class="relative z-20 max-w-4xl mx-auto px-4 md:px-8 py-16 text-center">
+      <div class="font-mono text-red-400">{{ error }}</div>
+    </div>
+
+    <article v-else class="relative z-20 max-w-4xl mx-auto px-4 md:px-8 py-8 pb-16">
+      <!-- 标题 BUG-13 修复：移动端字号调整 -->
+      <h1 class="font-rajdhani text-2xl md:text-4xl font-bold text-text-bright mb-4">
+        {{ project.title }}
+      </h1>
+
+      <!-- 项目简介 -->
+      <p class="text-text-dim text-base md:text-lg mb-6 leading-relaxed">
+        {{ project.summary }}
+      </p>
+
+      <!-- 元信息：只显示日期 -->
+      <div class="flex items-center font-mono text-xs text-text-dim mb-6">
+        <span>{{ formatDate(project.created_at) }}</span>
+      </div>
+
+      <!-- 封面图 BUG-13 修复：移动端高度调整 -->
+      <div
+        v-if="project.cover_image"
+        class="h-48 md:h-60 mb-6 bg-gradient-to-br from-bg-panel to-bg-panel-2 border border-line flex items-center justify-center"
+      >
+        <img
+          :src="project.cover_image"
+          :alt="project.title"
+          class="max-h-full max-w-full object-contain"
+        />
+      </div>
+      <div
+        v-else
+        class="h-48 md:h-60 mb-6 bg-gradient-to-br from-bg-panel to-bg-panel-2 border border-line flex items-center justify-center"
+      >
+        <span class="font-mono text-xs text-text-dim">[ COVER IMAGE ]</span>
+      </div>
+
+      <!-- 技术栈 -->
+      <div class="flex flex-wrap gap-2 mb-8">
+        <span
+          v-for="tech in project.tech_stack.split(',')"
+          :key="tech"
+          class="font-mono text-xs text-neon-green border border-neon-green/30 px-3 py-1"
+        >
+          {{ tech }}
+        </span>
+      </div>
+
+      <!-- 正文 -->
+      <div
+        class="prose prose-invert max-w-none mb-8 markdown-body"
+        v-html="renderedContent"
+      ></div>
+
+      <!-- 外链按钮 BUG-13 修复：移动端响应式 -->
+      <div class="flex flex-col md:flex-row gap-3 md:gap-4 mb-8">
+        <a
+          v-if="project.demo_url"
+          :href="project.demo_url"
+          target="_blank"
+          class="btn-primary font-mono text-sm bg-neon-green text-[#050810] px-6 py-3 font-bold hover:shadow-[0_0_20px_rgba(0,255,200,0.4)] transition-shadow inline-block text-center"
+          style="clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);"
+        >
+          ▶ 在线演示
+        </a>
+        <a
+          v-if="project.github_url"
+          :href="project.github_url"
+          target="_blank"
+          class="btn-ghost font-mono text-sm text-neon-green border border-neon-green/30 px-6 py-3 hover:bg-neon-green/8 transition-colors inline-block text-center"
+          style="clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);"
+        >
+          ◈ GitHub
+        </a>
+      </div>
+
+      <!-- 页脚信息 BUG-13 修复：移动端响应式 -->
+      <div class="pt-6 border-t border-line flex flex-col md:flex-row md:justify-between gap-2 font-mono text-xs text-text-dim">
+        <span>浏览量: {{ project.views_count }}</span>
+        <span>最后更新: {{ formatDate(project.updated_at) }}</span>
+      </div>
+    </article>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { getProjectDetail } from '@/api'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+
+const route = useRoute()
+const project = ref(null)
+const loading = ref(true)
+const error = ref(null)
+
+// BUG-05 修复：鼠标光斑效果
+const glowRef = ref(null)
+const mouseX = ref(0)
+const mouseY = ref(0)
+
+const glowStyle = computed(() => ({
+  left: `${mouseX.value}px`,
+  top: `${mouseY.value}px`,
+  background: 'radial-gradient(circle, rgba(0,255,200,0.08), transparent 60%)',
+  transform: 'translate(-50%, -50%)'
+}))
+
+const handleMouseMove = (e) => {
+  mouseX.value = e.clientX
+  mouseY.value = e.clientY
+}
+
+// 渲染 Markdown
+const renderedContent = computed(() => {
+  if (!project.value?.content) return ''
+  const rawHtml = marked(project.value.content)
+  return DOMPurify.sanitize(rawHtml)
+})
+
+// 获取项目详情
+const fetchProject = async () => {
+  try {
+    loading.value = true
+    project.value = await getProjectDetail(route.params.id)
+  } catch (err) {
+    error.value = err.detail || '项目不存在'
+  } finally {
+    loading.value = false
+  }
+}
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  const date = new Date(dateStr)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+onMounted(() => {
+  fetchProject()
+  // BUG-05 修复：添加鼠标移动监听
+  document.addEventListener('mousemove', handleMouseMove)
+})
+
+onUnmounted(() => {
+  // BUG-05 修复：清理鼠标移动监听
+  document.removeEventListener('mousemove', handleMouseMove)
+})
+</script>
+
+<style scoped>
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(0,255,200,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,200,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.markdown-body {
+  color: #aabbcc;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.markdown-body :deep(h1),
+.markdown-body :deep(h2),
+.markdown-body :deep(h3),
+.markdown-body :deep(h4) {
+  color: #e8f4ff;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.markdown-body :deep(h1) { font-size: 2em; }
+.markdown-body :deep(h2) { font-size: 1.5em; }
+.markdown-body :deep(h3) { font-size: 1.25em; }
+.markdown-body :deep(h4) { font-size: 1.1em; }
+
+.markdown-body :deep(p) {
+  margin-bottom: 1em;
+}
+
+.markdown-body :deep(code) {
+  font-family: 'JetBrains Mono', monospace;
+  background: #0c1220;
+  padding: 2px 6px;
+  color: #00ffc8;
+  font-size: 0.9em;
+  border-radius: 3px;
+}
+
+.markdown-body :deep(pre) {
+  background: #0c1220;
+  border: 1px solid #1a2540;
+  padding: 1em;
+  overflow-x: auto;
+  border-radius: 4px;
+  margin: 1em 0;
+}
+
+.markdown-body :deep(pre code) {
+  background: none;
+  padding: 0;
+  color: #c8d6e5;
+}
+
+.markdown-body :deep(a) {
+  color: #00ffc8;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(0, 255, 200, 0.4);
+}
+
+.markdown-body :deep(a:hover) {
+  border-bottom-style: solid;
+}
+
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) {
+  margin-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+.markdown-body :deep(li) {
+  margin-bottom: 0.5em;
+}
+
+.markdown-body :deep(blockquote) {
+  border-left: 3px solid #00ffc8;
+  padding-left: 1em;
+  margin-left: 0;
+  color: #8899aa;
+  font-style: italic;
+}
+</style>

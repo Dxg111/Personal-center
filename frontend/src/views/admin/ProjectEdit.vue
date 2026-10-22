@@ -1,0 +1,379 @@
+<template>
+  <div class="admin-project-edit min-h-screen bg-[#050810]">
+    <!-- 全局网格背景 -->
+    <div class="fixed inset-0 z-0 pointer-events-none bg-grid-admin"></div>
+
+    <div class="relative z-20">
+      <!-- 顶部栏 -->
+      <div class="topbar flex justify-between items-center px-8 py-4 border-b border-line">
+        <div class="flex items-center gap-4">
+          <button
+            @click="$router.push('/admin/projects')"
+            class="font-mono text-xs text-text-dim hover:text-neon-yellow transition-colors"
+          >
+            ← 返回列表
+          </button>
+          <div class="font-rajdhani text-lg text-text-bright">
+            {{ isEdit ? '编辑项目' : '新建项目' }}
+            <span v-if="isEdit" class="font-mono text-sm text-neon-yellow ml-2">ID: {{ $route.params.id }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 表单 -->
+      <div class="max-w-4xl mx-auto px-8 py-8">
+        <div v-if="loading" class="text-center py-16 font-mono text-neon-yellow">
+          加载中...
+        </div>
+
+        <div v-else-if="error" class="text-center py-16 font-mono text-red-400">
+          {{ error }}
+        </div>
+
+        <form v-else @submit.prevent="handleSubmit" class="space-y-6">
+          <!-- 标题 -->
+          <div class="row">
+            <label class="block font-mono text-xs text-text-dim mb-2">// 标题 TITLE</label>
+            <input
+              v-model="form.title"
+              type="text"
+              placeholder="项目标题"
+              class="w-full bg-[#050810] border border-line px-4 py-3 text-text-bright font-mono text-sm outline-none focus:border-neon-yellow transition-colors"
+              required
+            />
+          </div>
+
+          <!-- 简介 -->
+          <div class="row">
+            <label class="block font-mono text-xs text-text-dim mb-2">// 一句话简介 SUMMARY</label>
+            <input
+              v-model="form.summary"
+              type="text"
+              placeholder="列表卡片显示的一句话"
+              class="w-full bg-[#050810] border border-line px-4 py-3 text-text-bright font-mono text-sm outline-none focus:border-neon-yellow transition-colors"
+              required
+            />
+          </div>
+
+          <!-- 分类和技术栈 -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="row">
+              <label class="block font-mono text-xs text-text-dim mb-2">// 分类 CATEGORY</label>
+              <select
+                v-model="form.category"
+                class="w-full bg-[#050810] border border-line px-4 py-3 text-text-bright font-mono text-sm outline-none focus:border-neon-yellow transition-colors"
+              >
+                <option value="project">项目 project</option>
+                <option value="work">作品 work</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <label class="block font-mono text-xs text-text-dim mb-2">// 技术栈 TAGS (逗号分隔)</label>
+              <input
+                v-model="form.tech_stack"
+                type="text"
+                placeholder="Python,Vue3,FastAPI"
+                class="w-full bg-[#050810] border border-line px-4 py-3 text-text-bright font-mono text-sm outline-none focus:border-neon-yellow transition-colors"
+              />
+            </div>
+          </div>
+
+          <!-- 封面图 -->
+          <div class="row">
+            <label class="block font-mono text-xs text-text-dim mb-2">// 封面图 COVER</label>
+            <div class="border border-dashed border-line p-6 text-center">
+              <input
+                type="file"
+                @change="handleFileChange"
+                accept="image/*"
+                class="hidden"
+                ref="fileInput"
+              />
+              <button
+                type="button"
+                @click="$refs.fileInput.click()"
+                class="font-mono text-sm text-neon-green hover:underline"
+              >
+                拖拽或 <b>点击上传</b> （jpg/png/webp, ≤5MB）
+              </button>
+              <div v-if="uploadProgress" class="mt-2 font-mono text-xs text-neon-yellow">
+                上传中... {{ uploadProgress }}%
+              </div>
+              <div v-if="form.cover_image" class="mt-4">
+                <img :src="form.cover_image" alt="封面预览" class="max-h-40 mx-auto border border-line" />
+                <button
+                  type="button"
+                  @click="form.cover_image = null"
+                  class="mt-2 font-mono text-xs text-red-400 hover:underline"
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 链接 -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="row">
+              <label class="block font-mono text-xs text-text-dim mb-2">// 演示链接</label>
+              <input
+                v-model="form.demo_url"
+                type="url"
+                placeholder="https://"
+                class="w-full bg-[#050810] border border-line px-4 py-3 text-text-bright font-mono text-sm outline-none focus:border-neon-yellow transition-colors"
+              />
+            </div>
+
+            <div class="row">
+              <label class="block font-mono text-xs text-text-dim mb-2">// GitHub 链接</label>
+              <input
+                v-model="form.github_url"
+                type="url"
+                placeholder="https://github.com/"
+                class="w-full bg-[#050810] border border-line px-4 py-3 text-text-bright font-mono text-sm outline-none focus:border-neon-yellow transition-colors"
+              />
+            </div>
+          </div>
+
+          <!-- 排序 -->
+          <div class="row">
+            <label class="block font-mono text-xs text-text-dim mb-2">// 排序权重 SORT_ORDER (数字越小越靠前)</label>
+            <input
+              v-model.number="form.sort_order"
+              type="number"
+              placeholder="999"
+              class="w-full bg-[#050810] border border-line px-4 py-3 text-text-bright font-mono text-sm outline-none focus:border-neon-yellow transition-colors"
+            />
+          </div>
+
+          <!-- 正文编辑器 -->
+          <div class="row">
+            <label class="block font-mono text-xs text-text-dim mb-2">// 正文 CONTENT（Markdown）</label>
+            <div class="editor-bar flex gap-3 px-4 py-2 bg-bg-panel border border-line border-b-0 font-mono text-xs text-text-dim">
+              <button type="button" @click="insertMarkdown('**', '**')" class="hover:text-neon-yellow">B</button>
+              <button type="button" @click="insertMarkdown('*', '*')" class="hover:text-neon-yellow italic">I</button>
+              <button type="button" @click="insertMarkdown('# ', '')" class="hover:text-neon-yellow">H1</button>
+              <button type="button" @click="insertMarkdown('## ', '')" class="hover:text-neon-yellow">H2</button>
+              <button type="button" @click="insertMarkdown('`', '`')" class="hover:text-neon-yellow">&lt;&gt;</button>
+            </div>
+            <textarea
+              v-model="form.content"
+              ref="contentArea"
+              placeholder="# 项目概述&#10;&#10;在这里写项目正文..."
+              class="w-full bg-[#050810] border border-line px-4 py-3 text-text font-mono text-sm outline-none focus:border-neon-yellow transition-colors resize-vertical"
+              rows="15"
+              required
+            ></textarea>
+          </div>
+
+          <!-- 底部操作按钮 -->
+          <div class="actions flex gap-4 pt-6 border-t border-line bg-bg-panel -mx-8 px-8 -mb-8 py-4 sticky bottom-0">
+            <button
+              v-if="!isEdit || !projectData.is_published"
+              type="button"
+              @click="saveDraft"
+              :disabled="saving"
+              class="flex-1 py-3 text-center font-mono text-sm text-neon-yellow border border-neon-yellow hover:bg-neon-yellow/10 transition-colors disabled:opacity-50"
+              style="clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);"
+            >
+              {{ saving ? '保存中...' : '□ 存草稿' }}
+            </button>
+            <button
+              v-if="!isEdit || !projectData.is_published"
+              type="button"
+              @click="publishProject"
+              :disabled="saving"
+              class="flex-1 py-3 text-center font-mono text-sm text-[#050810] bg-neon-green font-bold hover:shadow-[0_0_20px_rgba(0,255,200,0.4)] transition-shadow disabled:opacity-50"
+              style="clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);"
+            >
+              {{ saving ? '发布中...' : '▶ 发 布' }}
+            </button>
+            <button
+              v-if="isEdit && projectData.is_published"
+              type="button"
+              @click="saveChanges"
+              :disabled="saving"
+              class="flex-1 py-3 text-center font-mono text-sm text-[#050810] bg-neon-green font-bold hover:shadow-[0_0_20px_rgba(0,255,200,0.4)] transition-shadow disabled:opacity-50"
+              style="clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);"
+            >
+              {{ saving ? '保存中...' : '✓ 保 存' }}
+            </button>
+            <button
+              v-if="isEdit && projectData.is_published"
+              type="button"
+              @click="unpublishProject"
+              :disabled="saving"
+              class="flex-1 py-3 text-center font-mono text-sm text-red-400 border border-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+              style="clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);"
+            >
+              {{ saving ? '处理中...' : '✗ 取消发布' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { getAdminProjectDetail, createProject, updateProject, uploadImage } from '@/api'
+
+const route = useRoute()
+const router = useRouter()
+
+const isEdit = computed(() => !!route.params.id)
+const loading = ref(false)
+const error = ref(null)
+const saving = ref(false)
+const uploadProgress = ref(0)
+
+const fileInput = ref(null)
+const contentArea = ref(null)
+
+// 存储原始项目数据（用于判断当前发布状态）
+const projectData = ref({
+  is_published: false
+})
+
+const form = ref({
+  title: '',
+  summary: '',
+  content: '',
+  cover_image: null,
+  tech_stack: '',
+  demo_url: null,
+  github_url: null,
+  category: 'project',
+  sort_order: 999
+})
+
+// 加载项目数据（编辑模式）
+const fetchProject = async () => {
+  try {
+    loading.value = true
+    // BUG-06 修复：使用管理端 API，不增加浏览量
+    const project = await getAdminProjectDetail(route.params.id)
+    projectData.value = project
+    form.value = {
+      title: project.title,
+      summary: project.summary,
+      content: project.content,
+      cover_image: project.cover_image,
+      tech_stack: project.tech_stack,
+      demo_url: project.demo_url,
+      github_url: project.github_url,
+      category: project.category,
+      sort_order: project.sort_order
+    }
+  } catch (err) {
+    error.value = err.detail || '加载项目失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+// 处理文件上传
+const handleFileChange = async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+
+  // 验证文件大小
+  if (file.size > 5 * 1024 * 1024) {
+    alert('文件大小不能超过 5MB')
+    return
+  }
+
+  try {
+    uploadProgress.value = 50
+    const result = await uploadImage(file)
+    form.value.cover_image = result.url
+    uploadProgress.value = 0
+  } catch (err) {
+    alert(err.detail || '上传失败')
+    uploadProgress.value = 0
+  }
+}
+
+// 插入 Markdown 格式
+const insertMarkdown = (before, after) => {
+  const textarea = contentArea.value
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = form.value.content
+  const selectedText = text.substring(start, end)
+
+  form.value.content = text.substring(0, start) + before + selectedText + after + text.substring(end)
+
+  // 重新聚焦并设置光标位置
+  setTimeout(() => {
+    textarea.focus()
+    textarea.setSelectionRange(start + before.length, end + before.length)
+  }, 0)
+}
+
+// 提交数据的通用函数
+const submitData = async (isPublished) => {
+  saving.value = true
+
+  try {
+    const data = {
+      ...form.value,
+      is_published: isPublished
+    }
+
+    if (isEdit.value) {
+      await updateProject(route.params.id, data)
+    } else {
+      await createProject(data)
+    }
+
+    const message = isPublished ? '发布成功！' : '草稿已保存'
+    alert(message)
+    router.push('/admin/projects')
+  } catch (err) {
+    alert(err.detail || '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+// 存草稿（BUG-01 修复：明确传递 false）
+const saveDraft = () => {
+  submitData(false)
+}
+
+// 发布项目（BUG-01 修复：明确传递 true）
+const publishProject = () => {
+  submitData(true)
+}
+
+// 保存已发布项目的修改（BUG-02 修复：保持发布状态）
+const saveChanges = () => {
+  submitData(true)
+}
+
+// 取消发布（BUG-02 修复：改为草稿状态）
+const unpublishProject = () => {
+  if (confirm('确定要取消发布吗？取消后将变为草稿状态。')) {
+    submitData(false)
+  }
+}
+
+onMounted(() => {
+  if (isEdit.value) {
+    fetchProject()
+  }
+})
+</script>
+
+<style scoped>
+.bg-grid-admin {
+  background-image:
+    linear-gradient(rgba(255,176,32,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,176,32,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+</style>
