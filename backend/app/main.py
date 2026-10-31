@@ -1,41 +1,40 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import create_db_and_tables
-from app.api import auth, projects, profile, admin
-import os
 
+from app.config import get_settings
+from app.api import auth, projects, profile, admin
+
+settings = get_settings()
+
+# 数据表由 Alembic 迁移管理（init_db.py 会自动执行 upgrade head）
 app = FastAPI(
     title="Personal Center API",
     description="个人中心后端 API",
-    version="1.0.0"
+    version="1.0.0",
 )
 
-# CORS 配置（开发环境允许所有来源，生产环境需要限制）
+# CORS 配置（通过 CORS_ORIGINS 环境变量配置，多个用逗号分隔）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # 前端开发服务器地址
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 静态文件服务（上传的图片）
-uploads_dir = "uploads"
-if os.path.exists(uploads_dir):
-    app.mount("/static/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+# 静态文件服务（上传的图片）；启动时确保目录存在，避免目录缺失导致挂载失效
+uploads_dir = settings.UPLOAD_DIR
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/static/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 # 注册路由
 app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(profile.router)
 app.include_router(admin.router)
-
-
-@app.on_event("startup")
-async def on_startup():
-    """启动时创建数据库表"""
-    create_db_and_tables()
 
 
 @app.get("/")

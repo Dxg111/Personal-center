@@ -6,7 +6,7 @@ settings = get_settings()
 # 创建数据库引擎
 engine = create_engine(
     settings.DATABASE_URL,
-    echo=True,  # 开发环境打印 SQL，生产环境改为 False
+    echo=settings.SQL_ECHO,  # 通过 SQL_ECHO 环境变量控制，生产默认关闭
     pool_pre_ping=True,  # 自动重连
 )
 

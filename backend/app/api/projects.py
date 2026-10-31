@@ -13,14 +13,11 @@ router = APIRouter(prefix="/api/projects", tags=["项目（公开）"])
 @router.get("", response_model=List[ProjectListResponse])
 def get_projects(
     category: Optional[str] = Query(None, pattern="^(project|work)$"),
-    published: bool = Query(True),
     session: Session = Depends(get_session)
 ):
-    """获取项目列表（访客端）"""
-    statement = select(Project)
-
-    if published:
-        statement = statement.where(Project.is_published == True)
+    """获取项目列表（访客端，仅返回已发布项目）"""
+    # 公开接口不允许客户端决定是否包含草稿，始终只返回已发布项目
+    statement = select(Project).where(Project.is_published == True)
 
     if category:
         statement = statement.where(Project.category == category)
@@ -72,17 +69,16 @@ def get_featured_projects(
 
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project_detail(project_id: int, session: Session = Depends(get_session)):
-    """获取项目详情（浏览量 +1）"""
+    """获取项目详情（仅已发布项目，浏览量 +1）"""
     project = session.get(Project, project_id)
-    if not project:
+    # 未发布项目对访客视为不存在，避免通过 ID 直接访问草稿
+    if not project or not project.is_published:
         raise HTTPException(status_code=404, detail="项目不存在")
 
-    # 只统计已发布项目的浏览量
-    if project.is_published:
-        project.views_count += 1
-        session.add(project)
-        session.commit()
-        session.refresh(project)
+    project.views_count += 1
+    session.add(project)
+    session.commit()
+    session.refresh(project)
 
     # BUG-12 修复：解析项目图片JSON
     project_dict = project.model_dump()

@@ -1,6 +1,7 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 sqlmodel==0.0.22
+alembic==1.13.3
 pymysql==1.1.1
 cryptography==43.0.1
 python-jose[cryptography]==3.3.0

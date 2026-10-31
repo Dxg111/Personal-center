@@ -9,8 +9,16 @@ from pathlib import Path
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Windows 控制台默认可能是 GBK，统一改用 UTF-8 输出，避免 ✓ 等字符报错
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import inspect
 from sqlmodel import Session, select
-from app.database import engine, create_db_and_tables
+from app.database import engine
 from app.models import AdminUser, Profile
 from app.utils.auth import get_password_hash
 from app.config import get_settings
@@ -18,11 +26,26 @@ from app.config import get_settings
 settings = get_settings()
 
 
+def run_migrations():
+    """执行 Alembic 迁移（兼容由 create_all 建表的旧数据库）"""
+    alembic_cfg = Config(str(Path(__file__).resolve().parent / "alembic.ini"))
+
+    tables = set(inspect(engine).get_table_names())
+    legacy_tables = {"admin_user", "project", "profile"}
+
+    # 旧库已有表但没有版本记录：先标记为当前最新版本，避免重复建表
+    if "alembic_version" not in tables and legacy_tables.issubset(tables):
+        print("检测到旧版数据库，正在标记迁移版本...")
+        command.stamp(alembic_cfg, "head")
+
+    command.upgrade(alembic_cfg, "head")
+
+
 def init_database():
     """初始化数据库"""
-    print("正在创建数据库表...")
-    create_db_and_tables()
-    print("✓ 数据库表创建成功")
+    print("正在执行数据库迁移...")
+    run_migrations()
+    print("✓ 数据库迁移完成")
 
     with Session(engine) as session:
         # 1. 创建管理员账号

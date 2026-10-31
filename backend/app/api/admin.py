@@ -20,6 +20,12 @@ import json
 router = APIRouter(prefix="/api/admin", tags=["管理端"])
 
 
+def ensure_publishable(project: Project) -> None:
+    """发布的项目至少需要有标题，草稿允许部分内容为空"""
+    if project.is_published and not project.title.strip():
+        raise HTTPException(status_code=422, detail="发布项目前请填写标题")
+
+
 # ============ 项目管理 ============
 
 @router.get("/projects", response_model=List[ProjectListResponse])
@@ -81,6 +87,9 @@ def create_project(
         project_data['project_images'] = json.dumps(project_data['project_images'])
 
     db_project = Project(**project_data)
+    db_project.title = db_project.title.strip()
+    ensure_publishable(db_project)
+
     session.add(db_project)
     session.commit()
     session.refresh(db_project)
@@ -118,7 +127,10 @@ def update_project(
     for key, value in project_data.items():
         setattr(db_project, key, value)
 
+    db_project.title = db_project.title.strip()
     db_project.updated_at = datetime.utcnow()
+    ensure_publishable(db_project)
+
     session.add(db_project)
     session.commit()
     session.refresh(db_project)
@@ -164,6 +176,8 @@ def toggle_publish(
 
     db_project.is_published = toggle.is_published
     db_project.updated_at = datetime.utcnow()
+    ensure_publishable(db_project)
+
     session.add(db_project)
     session.commit()
     session.refresh(db_project)

@@ -4,10 +4,10 @@ from datetime import datetime
 
 
 class ProjectBase(BaseModel):
-    """项目基础字段"""
-    title: str = Field(min_length=1, max_length=200)
-    summary: str = Field(max_length=500)
-    content: str
+    """项目基础字段（除发布时的标题外，其余均可留空）"""
+    title: str = Field(default="", max_length=200)
+    summary: str = Field(default="", max_length=500)
+    content: str = ""
     cover_image: Optional[str] = Field(default=None, max_length=500)
     # BUG-12 修复：支持多张项目图片
     project_images: Optional[List[str]] = None

@@ -35,8 +35,8 @@
         {{ project.title }}
       </h1>
 
-      <!-- 项目简介 -->
-      <p class="text-text-dim text-base md:text-lg mb-6 leading-relaxed">
+      <!-- 项目简介（未填写时不占位） -->
+      <p v-if="project.summary" data-test="project-summary" class="text-text-dim text-base md:text-lg mb-6 leading-relaxed">
         {{ project.summary }}
       </p>
 
@@ -48,12 +48,16 @@
       <!-- 封面图/轮播图 BUG-12 修复：支持多图轮播 -->
       <div
         v-if="hasImages"
+        data-test="carousel"
         class="relative h-48 md:h-80 mb-6 bg-gradient-to-br from-bg-panel to-bg-panel-2 border border-line flex items-center justify-center overflow-hidden"
+        @mouseenter="isCarouselHovered = true"
+        @mouseleave="isCarouselHovered = false"
       >
         <!-- 当前显示的图片 -->
         <img
           :src="currentImage"
           :alt="project.title"
+          data-test="carousel-image"
           class="max-h-full max-w-full object-contain transition-opacity duration-300"
         />
 
@@ -61,6 +65,7 @@
         <template v-if="allImages.length > 1">
           <!-- 左箭头 -->
           <button
+            data-test="carousel-prev"
             @click="prevImage"
             class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 border border-neon-green/30 flex items-center justify-center transition-all"
             style="clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));"
@@ -70,6 +75,7 @@
 
           <!-- 右箭头 -->
           <button
+            data-test="carousel-next"
             @click="nextImage"
             class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 border border-neon-green/30 flex items-center justify-center transition-all"
             style="clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));"
@@ -82,7 +88,7 @@
             <button
               v-for="(img, index) in allImages"
               :key="index"
-              @click="currentImageIndex = index"
+              @click="goToImage(index)"
               :class="[
                 'w-2 h-2 rounded-full transition-all',
                 index === currentImageIndex
@@ -105,10 +111,10 @@
         <span class="font-mono text-xs text-text-dim">[ NO IMAGE ]</span>
       </div>
 
-      <!-- 技术栈 -->
-      <div class="flex flex-wrap gap-2 mb-8">
+      <!-- 技术栈（未填写时整块隐藏） -->
+      <div v-if="techTags.length" data-test="tech-tags" class="flex flex-wrap gap-2 mb-8">
         <span
-          v-for="tech in project.tech_stack.split(',')"
+          v-for="tech in techTags"
           :key="tech"
           class="font-mono text-xs text-neon-green border border-neon-green/30 px-3 py-1"
         >
@@ -118,9 +124,16 @@
 
       <!-- 正文 -->
       <div
+        v-if="renderedContent"
         class="prose prose-invert max-w-none mb-8 markdown-body"
         v-html="renderedContent"
       ></div>
+      <div
+        v-else
+        class="mb-8 border border-line bg-bg-panel px-4 py-8 text-center font-mono text-sm text-text-dim"
+      >
+        [ 暂无详细介绍 ]
+      </div>
 
       <!-- 外链按钮 BUG-13 修复：移动端响应式 -->
       <div class="flex flex-col md:flex-row gap-3 md:gap-4 mb-8">
@@ -154,9 +167,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getProjectDetail } from '@/api'
+import { getTechTags } from '@/utils/project'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 
@@ -165,8 +179,11 @@ const project = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
-// BUG-12 修复：图片轮播
+// BUG-12 修复：图片轮播（支持自动切换）
 const currentImageIndex = ref(0)
+const isCarouselHovered = ref(false)
+const AUTOPLAY_INTERVAL = 4000
+let autoplayTimer = null
 
 // BUG-12 修复：合并封面图和项目图片数组
 const allImages = computed(() => {
@@ -194,17 +211,60 @@ const currentImage = computed(() => {
   return allImages.value[currentImageIndex.value]
 })
 
-// BUG-12 修复：上一张图片
+const techTags = computed(() => getTechTags(project.value?.tech_stack))
+
+const stopAutoplay = () => {
+  if (autoplayTimer) {
+    clearInterval(autoplayTimer)
+    autoplayTimer = null
+  }
+}
+
+const startAutoplay = () => {
+  stopAutoplay()
+
+  // 只有多图时才自动轮播
+  if (allImages.value.length <= 1) return
+
+  // 尊重系统“减少动态效果”设置
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return
+  }
+
+  autoplayTimer = setInterval(() => {
+    // 鼠标悬停或页面不可见时暂停推进
+    if (isCarouselHovered.value || document.hidden) return
+    currentImageIndex.value = (currentImageIndex.value + 1) % allImages.value.length
+  }, AUTOPLAY_INTERVAL)
+}
+
+// 指示器点击：切换后重新计时
+const goToImage = (index) => {
+  currentImageIndex.value = index
+  startAutoplay()
+}
+
+// 上一张图片
 const prevImage = () => {
   if (allImages.value.length <= 1) return
   currentImageIndex.value = (currentImageIndex.value - 1 + allImages.value.length) % allImages.value.length
+  startAutoplay()
 }
 
-// BUG-12 修复：下一张图片
+// 下一张图片
 const nextImage = () => {
   if (allImages.value.length <= 1) return
   currentImageIndex.value = (currentImageIndex.value + 1) % allImages.value.length
+  startAutoplay()
 }
+
+// 项目加载或图片列表变化后（重新）启动自动轮播
+watch(allImages, (images) => {
+  if (currentImageIndex.value >= images.length) {
+    currentImageIndex.value = 0
+  }
+  startAutoplay()
+})
 
 // BUG-05 修复：鼠标光斑效果
 const glowRef = ref(null)
@@ -225,7 +285,7 @@ const handleMouseMove = (e) => {
 
 // 渲染 Markdown
 const renderedContent = computed(() => {
-  if (!project.value?.content) return ''
+  if (!project.value?.content || !project.value.content.trim()) return ''
   const rawHtml = marked(project.value.content)
   return DOMPurify.sanitize(rawHtml)
 })
@@ -257,6 +317,7 @@ onMounted(() => {
 onUnmounted(() => {
   // BUG-05 修复：清理鼠标移动监听
   document.removeEventListener('mousemove', handleMouseMove)
+  stopAutoplay()
 })
 </script>
 
@@ -266,83 +327,5 @@ onUnmounted(() => {
     linear-gradient(rgba(0,255,200,0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0,255,200,0.03) 1px, transparent 1px);
   background-size: 40px 40px;
-}
-
-.markdown-body {
-  color: #aabbcc;
-  font-size: 15px;
-  line-height: 1.8;
-}
-
-.markdown-body :deep(h1),
-.markdown-body :deep(h2),
-.markdown-body :deep(h3),
-.markdown-body :deep(h4) {
-  color: #e8f4ff;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 600;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-}
-
-.markdown-body :deep(h1) { font-size: 2em; }
-.markdown-body :deep(h2) { font-size: 1.5em; }
-.markdown-body :deep(h3) { font-size: 1.25em; }
-.markdown-body :deep(h4) { font-size: 1.1em; }
-
-.markdown-body :deep(p) {
-  margin-bottom: 1em;
-}
-
-.markdown-body :deep(code) {
-  font-family: 'JetBrains Mono', monospace;
-  background: #0c1220;
-  padding: 2px 6px;
-  color: #00ffc8;
-  font-size: 0.9em;
-  border-radius: 3px;
-}
-
-.markdown-body :deep(pre) {
-  background: #0c1220;
-  border: 1px solid #1a2540;
-  padding: 1em;
-  overflow-x: auto;
-  border-radius: 4px;
-  margin: 1em 0;
-}
-
-.markdown-body :deep(pre code) {
-  background: none;
-  padding: 0;
-  color: #c8d6e5;
-}
-
-.markdown-body :deep(a) {
-  color: #00ffc8;
-  text-decoration: none;
-  border-bottom: 1px dotted rgba(0, 255, 200, 0.4);
-}
-
-.markdown-body :deep(a:hover) {
-  border-bottom-style: solid;
-}
-
-.markdown-body :deep(ul),
-.markdown-body :deep(ol) {
-  margin-left: 1.5em;
-  margin-bottom: 1em;
-}
-
-.markdown-body :deep(li) {
-  margin-bottom: 0.5em;
-}
-
-.markdown-body :deep(blockquote) {
-  border-left: 3px solid #00ffc8;
-  padding-left: 1em;
-  margin-left: 0;
-  color: #8899aa;
-  font-style: italic;
 }
 </style>

@@ -84,7 +84,7 @@
               :key="project.id"
               class="border-b border-bg-panel hover:bg-bg-panel/30 transition-colors"
             >
-              <td class="py-4 px-4 text-text-bright text-sm">{{ project.title }}</td>
+              <td class="py-4 px-4 text-text-bright text-sm">{{ project.title || '（未命名草稿）' }}</td>
               <td class="py-4 px-4 text-text text-sm">{{ project.category === 'project' ? '项目' : '作品' }}</td>
               <td class="py-4 px-4">
                 <span
@@ -168,6 +168,11 @@ const handleEdit = (id) => {
 
 // 切换发布状态
 const handleTogglePublish = async (project) => {
+  if (!project.is_published && !project.title.trim()) {
+    alert('发布前请先编辑并填写标题')
+    return
+  }
+
   if (!confirm(`确定${project.is_published ? '取消发布' : '发布'}该项目吗？`)) {
     return
   }
@@ -182,7 +187,8 @@ const handleTogglePublish = async (project) => {
 
 // 删除项目
 const handleDelete = async (project) => {
-  if (!confirm(`确定删除项目"${project.title}"吗？此操作不可恢复。`)) {
+  const name = project.title || '未命名草稿'
+  if (!confirm(`确定删除项目"${name}"吗？此操作不可恢复。`)) {
     return
   }
 

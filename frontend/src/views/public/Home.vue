@@ -10,36 +10,101 @@
       :style="glowStyle"
     ></div>
 
+    <!-- 移动端菜单遮罩：点击空白处关闭 -->
+    <transition name="fade">
+      <div
+        v-if="mobileMenuOpen"
+        class="md:hidden fixed inset-0 z-10 bg-black/40"
+        @click="mobileMenuOpen = false"
+      ></div>
+    </transition>
+
     <!-- 顶部状态条 BUG-13 修复：移动端适配 -->
-    <div class="topbar relative z-20 flex justify-between items-center px-4 md:px-12 py-4 border-b border-line font-mono text-xs text-text-dim">
+    <div class="topbar relative z-40 flex justify-between items-center px-4 md:px-12 py-4 border-b border-line font-mono text-xs text-text-dim">
       <div class="brand text-text-bright font-medium tracking-wider text-xs md:text-sm">
         RED岸 <span class="text-neon-green">// STATION</span>
       </div>
       <div class="nav hidden md:flex gap-6">
-        <a href="#" class="hover:text-neon-green transition-colors">HOME</a>
+        <a href="#" @click.prevent="scrollToTop" class="hover:text-neon-green transition-colors">HOME</a>
         <a href="#projects" @click.prevent="scrollToProjects('project')" class="hover:text-neon-green transition-colors">PROJECTS</a>
         <a href="#projects" @click.prevent="scrollToProjects('work')" class="hover:text-neon-green transition-colors">WORKS</a>
-        <a href="#contact" class="hover:text-neon-green transition-colors">CONTACT</a>
+        <a href="#contact" @click.prevent="scrollToContact" class="hover:text-neon-green transition-colors">CONTACT</a>
       </div>
       <div class="hidden md:block">
         <span class="inline-block w-2 h-2 rounded-full bg-neon-green shadow-[0_0_8px_#00ffc8] animate-blink mr-2"></span>
         ONLINE · UTC+8
       </div>
-      <div class="md:hidden">
+
+      <!-- 移动端：状态灯 + 汉堡菜单按钮 -->
+      <div class="flex items-center gap-4 md:hidden">
         <span class="inline-block w-2 h-2 rounded-full bg-neon-green shadow-[0_0_8px_#00ffc8] animate-blink"></span>
+        <button
+          type="button"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+          :aria-expanded="mobileMenuOpen"
+          aria-controls="mobile-nav"
+          :aria-label="mobileMenuOpen ? '关闭导航菜单' : '打开导航菜单'"
+          class="w-8 h-8 flex flex-col items-center justify-center gap-[5px] text-neon-green"
+        >
+          <span :class="['block w-6 h-px bg-current transition-transform duration-300', mobileMenuOpen ? 'translate-y-[6px] rotate-45' : '']"></span>
+          <span :class="['block w-6 h-px bg-current transition-opacity duration-300', mobileMenuOpen ? 'opacity-0' : 'opacity-100']"></span>
+          <span :class="['block w-6 h-px bg-current transition-transform duration-300', mobileMenuOpen ? '-translate-y-[6px] -rotate-45' : '']"></span>
+        </button>
       </div>
+
+      <!-- 移动端导航面板 -->
+      <transition name="mobile-menu">
+        <nav
+          v-if="mobileMenuOpen"
+          id="mobile-nav"
+          class="md:hidden absolute left-0 right-0 top-full z-30 bg-[#070b16] border-b border-line shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
+        >
+          <button
+            v-for="item in mobileMenuItems"
+            :key="item.action"
+            type="button"
+            @click="handleMobileNav(item.action)"
+            class="w-full flex items-center justify-between px-5 py-4 border-b border-line/60 text-left text-text hover:text-neon-green hover:bg-neon-green/5 transition-colors"
+          >
+            <span class="flex items-center gap-3">
+              <span class="text-[10px] text-text-dim">{{ item.index }}</span>
+              <span>{{ item.label }}</span>
+            </span>
+            <span class="text-neon-green">→</span>
+          </button>
+        </nav>
+      </transition>
     </div>
 
     <!-- Hero 区 BUG-13 修复：移动端适配 -->
     <section class="hero relative z-20 max-w-7xl mx-auto px-4 md:px-12 py-10 md:py-20 grid md:grid-cols-2 gap-10 items-center min-h-[50vh] md:min-h-[70vh]">
       <!-- 左侧内容 -->
       <div class="hero-left">
-        <div class="font-mono text-xs text-neon-green mb-3 md:mb-5">~/home — 欢迎访问我的信号站</div>
+        <!-- MVP-01：头像；未配置或加载失败时回退为姓名首字 -->
+        <div class="flex items-center gap-3 md:gap-4 mb-3 md:mb-5">
+          <div v-if="profile?.avatar_url && !avatarError" class="w-12 h-12 md:w-14 md:h-14 shrink-0">
+            <img
+              :src="profile.avatar_url"
+              :alt="profile.name"
+              @error="avatarError = true"
+              class="w-full h-full object-cover border border-neon-green/40 shadow-[0_0_16px_rgba(0,255,200,0.18)]"
+              style="clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));"
+            />
+          </div>
+          <div
+            v-else
+            class="w-12 h-12 md:w-14 md:h-14 shrink-0 border border-neon-green/40 bg-bg-panel flex items-center justify-center font-rajdhani text-xl md:text-2xl text-neon-green shadow-[0_0_16px_rgba(0,255,200,0.12)]"
+            style="clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));"
+          >
+            {{ (profile?.name || 'DEV').charAt(0) }}
+          </div>
+          <div class="font-mono text-xs text-neon-green">~/home — 欢迎访问我的信号站</div>
+        </div>
         <h1 class="font-rajdhani text-3xl md:text-5xl font-bold text-text-bright leading-tight tracking-wide">
           你好，我是<em class="text-neon-green not-italic">{{ profile?.name || 'Developer' }}</em><br>
           用代码解决实际问题
         </h1>
-        <div class="font-mono text-xs md:text-sm text-neon-green mt-3 md:mt-5 min-h-[22px]">
+        <div data-test="typed-slogan" class="font-mono text-xs md:text-sm text-neon-green mt-3 md:mt-5 min-h-[22px]">
           {{ typedText }}<span class="animate-blink">▊</span>
         </div>
         <p class="text-text text-sm md:text-base mt-3 md:mt-5 leading-relaxed max-w-[480px]">
@@ -143,12 +208,12 @@
           <!-- BUG-07 修复：文字占40% -->
           <div class="body p-5 flex-[2] flex flex-col">
             <!-- BUG-07 修复：标题字号更大 -->
-            <div class="title font-rajdhani text-2xl text-text-bright font-semibold leading-tight">{{ project.title }}</div>
-            <!-- BUG-07 修复：简介超过一行显示省略号 -->
-            <div class="sum text-sm text-text mt-2 leading-relaxed line-clamp-1">{{ project.summary }}</div>
-            <div class="techs mt-3 flex flex-wrap gap-1.5">
+            <div class="title font-rajdhani text-2xl text-text-bright font-semibold leading-tight">{{ project.title || '未命名项目' }}</div>
+            <!-- BUG-07 修复：简介超过一行显示省略号；未填写时显示占位文案 -->
+            <div class="sum text-sm text-text mt-2 leading-relaxed line-clamp-1">{{ project.summary || '暂无简介' }}</div>
+            <div v-if="getTechTags(project.tech_stack).length" class="techs mt-3 flex flex-wrap gap-1.5">
               <span
-                v-for="tech in project.tech_stack.split(',')"
+                v-for="tech in getTechTags(project.tech_stack)"
                 :key="tech"
                 class="font-mono text-[10px] text-neon-green border border-neon-green/30 px-2 py-0.5"
               >
@@ -186,7 +251,7 @@
         </div>
         <div class="term-body bg-black px-7 py-6 font-mono text-sm leading-loose min-h-[280px]">
           <div class="line text-text"><span class="text-neon-green mr-2">$</span><span class="text-text-bright">whoami</span></div>
-          <div class="line text-[#8899aa]"><span class="mr-2">→</span> 独立开发者 / 全栈 / 自动化方向</div>
+          <div class="line text-[#8899aa]"><span class="mr-2">→</span> {{ profile?.bio || '独立开发者 / 全栈 / 自动化方向' }}</div>
           <div class="line">&nbsp;</div>
           <div class="line text-text"><span class="text-neon-green mr-2">$</span><span class="text-text-bright">contact --all</span></div>
           <div class="line text-[#8899aa]"><span class="text-text-dim mr-2">微信</span> {{ profile?.wechat || 'your_wechat' }}</div>
@@ -207,14 +272,18 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProfileStore } from '@/stores/profile'
 import { getProjects } from '@/api'
+import { getTechTags } from '@/utils/project'
 
 const router = useRouter()
 const profileStore = useProfileStore()
 const profile = computed(() => profileStore.profile)
+
+// 头像加载失败时回退为姓名首字
+const avatarError = ref(false)
 
 // 鼠标光斑
 const glowRef = ref(null)
@@ -233,14 +302,15 @@ const handleMouseMove = (e) => {
   mouseY.value = e.clientY
 }
 
-// 打字机效果
-const slogans = [
+// 打字机效果：后台配置了 typing_slogan 时优先使用，否则使用默认文案
+const defaultSlogans = [
   '> 后端开发 · Python / FastAPI',
   '> 工业自动化 · 轨道信号检测效率提升 8 倍',
   '> 机器视觉 · OpenCV / 实时图像处理',
   '> 硬件交互 · 嵌入式 / 机械臂控制',
   '> 接外包 · 远程协作 · 长期有效'
 ]
+const slogans = ref([...defaultSlogans])
 const typedText = ref('')
 let sloganIndex = 0
 let charIndex = 0
@@ -248,7 +318,7 @@ let deleting = false
 let typingTimer = null
 
 const typeWriter = () => {
-  const currentSlogan = slogans[sloganIndex]
+  const currentSlogan = slogans.value[sloganIndex] || ''
 
   if (!deleting) {
     typedText.value = currentSlogan.slice(0, charIndex)
@@ -266,7 +336,8 @@ const typeWriter = () => {
 
     if (charIndex === 0) {
       deleting = false
-      sloganIndex = (sloganIndex + 1) % slogans.length
+      const total = slogans.value.length
+      sloganIndex = total > 0 ? (sloganIndex + 1) % total : 0
     }
     typingTimer = setTimeout(typeWriter, 30)
   }
@@ -343,7 +414,7 @@ const toggleShowAll = () => {
 // 获取项目数据
 const fetchProjects = async () => {
   try {
-    projects.value = await getProjects({ published: true })
+    projects.value = await getProjects()
   } catch (error) {
     console.error('获取项目列表失败:', error)
   }
@@ -370,15 +441,83 @@ const scrollToProjects = (category) => {
   }
 }
 
-onMounted(() => {
-  document.addEventListener('mousemove', handleMouseMove)
+// BUG-13：移动端导航菜单
+const mobileMenuOpen = ref(false)
+
+// 菜单展开时锁定页面滚动，避免遮罩与面板错位
+watch(mobileMenuOpen, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+})
+
+const mobileMenuItems = [
+  { index: '00', label: 'HOME', action: 'home' },
+  { index: '01', label: 'PROJECTS', action: 'project' },
+  { index: '02', label: 'WORKS', action: 'work' },
+  { index: '03', label: 'CONTACT', action: 'contact' }
+]
+
+const scrollToTop = () => {
+  mobileMenuOpen.value = false
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const scrollToContact = () => {
+  mobileMenuOpen.value = false
+  const element = document.getElementById('contact')
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth' })
+  }
+}
+
+const handleMobileNav = (action) => {
+  if (action === 'home') {
+    scrollToTop()
+  } else if (action === 'contact') {
+    scrollToContact()
+  } else {
+    mobileMenuOpen.value = false
+    scrollToProjects(action)
+  }
+}
+
+const handleKeydown = (e) => {
+  if (e.key === 'Escape') {
+    mobileMenuOpen.value = false
+  }
+}
+
+// 读取后台配置的打字机文案（支持多行，逐行循环）
+const applyProfileSlogans = () => {
+  const raw = profile.value?.typing_slogan
+  const lines = raw ? raw.split('\n').map(line => line.trim()).filter(Boolean) : []
+  slogans.value = lines.length > 0 ? lines : [...defaultSlogans]
+}
+
+// 文案变化后重置打字机状态
+const restartTypewriter = () => {
+  if (typingTimer) clearTimeout(typingTimer)
+  typedText.value = ''
+  sloganIndex = 0
+  charIndex = 0
+  deleting = false
   typeWriter()
-  profileStore.fetchProfile()
+}
+
+onMounted(async () => {
+  document.addEventListener('mousemove', handleMouseMove)
+  document.addEventListener('keydown', handleKeydown)
+  // 先用默认文案启动，避免等待接口时首屏空白
+  typeWriter()
+  await profileStore.fetchProfile()
+  applyProfileSlogans()
+  restartTypewriter()
   fetchProjects()
 })
 
 onUnmounted(() => {
   document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('keydown', handleKeydown)
+  document.body.style.overflow = ''
   if (typingTimer) clearTimeout(typingTimer)
 })
 </script>
@@ -426,5 +565,27 @@ onUnmounted(() => {
 
 .card:hover .cover-scan {
   transform: translateX(100%);
+}
+
+/* 移动端导航展开/收起动画 */
+.mobile-menu-enter-active,
+.mobile-menu-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.mobile-menu-enter-from,
+.mobile-menu-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

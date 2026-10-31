@@ -31,27 +31,30 @@
         </div>
 
         <form v-else @submit.prevent="handleSubmit" class="space-y-6">
+          <!-- 填写说明 -->
+          <div class="border border-line bg-bg-panel/40 px-4 py-3 font-mono text-xs text-text-dim leading-relaxed">
+            提示：草稿允许留空；发布前至少填写标题，简介、正文、封面、技术栈和链接都可以稍后补充。
+          </div>
+
           <!-- 标题 -->
           <div class="row">
             <label class="block font-mono text-xs text-text-dim mb-2">// 标题 TITLE</label>
             <input
               v-model="form.title"
               type="text"
-              placeholder="项目标题"
+              placeholder="项目标题（发布前必填）"
               class="w-full bg-[#050810] border border-line px-4 py-3 text-text-bright font-mono text-sm outline-none focus:border-neon-yellow transition-colors"
-              required
             />
           </div>
 
           <!-- 简介 -->
           <div class="row">
-            <label class="block font-mono text-xs text-text-dim mb-2">// 一句话简介 SUMMARY</label>
+            <label class="block font-mono text-xs text-text-dim mb-2">// 一句话简介 SUMMARY（可选）</label>
             <input
               v-model="form.summary"
               type="text"
-              placeholder="列表卡片显示的一句话"
+              placeholder="列表卡片显示的一句话，可留空"
               class="w-full bg-[#050810] border border-line px-4 py-3 text-text-bright font-mono text-sm outline-none focus:border-neon-yellow transition-colors"
-              required
             />
           </div>
 
@@ -195,24 +198,72 @@
             />
           </div>
 
-          <!-- 正文编辑器 -->
+          <!-- 正文编辑器（Markdown + 实时预览） -->
           <div class="row">
-            <label class="block font-mono text-xs text-text-dim mb-2">// 正文 CONTENT（Markdown）</label>
-            <div class="editor-bar flex gap-3 px-4 py-2 bg-bg-panel border border-line border-b-0 font-mono text-xs text-text-dim">
-              <button type="button" @click="insertMarkdown('**', '**')" class="hover:text-neon-yellow">B</button>
-              <button type="button" @click="insertMarkdown('*', '*')" class="hover:text-neon-yellow italic">I</button>
-              <button type="button" @click="insertMarkdown('# ', '')" class="hover:text-neon-yellow">H1</button>
-              <button type="button" @click="insertMarkdown('## ', '')" class="hover:text-neon-yellow">H2</button>
-              <button type="button" @click="insertMarkdown('`', '`')" class="hover:text-neon-yellow">&lt;&gt;</button>
+            <div class="flex items-center justify-between gap-3 mb-2">
+              <label class="block font-mono text-xs text-text-dim">// 正文 CONTENT（Markdown，可选）</label>
+              <div class="flex font-mono text-[10px] border border-line">
+                <button
+                  type="button"
+                  @click="editorMode = 'edit'"
+                  :class="['px-3 py-1 transition-colors', editorMode === 'edit' ? 'bg-neon-yellow text-[#050810]' : 'text-text-dim hover:text-neon-yellow']"
+                >
+                  编辑
+                </button>
+                <button
+                  type="button"
+                  @click="editorMode = 'split'"
+                  :class="['hidden md:block px-3 py-1 border-l border-line transition-colors', editorMode === 'split' ? 'bg-neon-yellow text-[#050810]' : 'text-text-dim hover:text-neon-yellow']"
+                >
+                  分栏
+                </button>
+                <button
+                  type="button"
+                  @click="editorMode = 'preview'"
+                  :class="['px-3 py-1 border-l border-line transition-colors', editorMode === 'preview' ? 'bg-neon-yellow text-[#050810]' : 'text-text-dim hover:text-neon-yellow']"
+                >
+                  预览
+                </button>
+              </div>
             </div>
-            <textarea
-              v-model="form.content"
-              ref="contentArea"
-              placeholder="# 项目概述&#10;&#10;在这里写项目正文..."
-              class="w-full bg-[#050810] border border-line px-4 py-3 text-text font-mono text-sm outline-none focus:border-neon-yellow transition-colors resize-vertical"
-              rows="15"
-              required
-            ></textarea>
+
+            <div :class="editorMode === 'split' ? 'grid md:grid-cols-2 gap-3' : ''">
+              <!-- 编辑区 -->
+              <div v-show="editorMode !== 'preview'" class="min-w-0">
+                <div class="editor-bar flex gap-3 px-4 py-2 bg-bg-panel border border-line border-b-0 font-mono text-xs text-text-dim">
+                  <button type="button" @click="insertMarkdown('**', '**')" class="hover:text-neon-yellow">B</button>
+                  <button type="button" @click="insertMarkdown('*', '*')" class="hover:text-neon-yellow italic">I</button>
+                  <button type="button" @click="insertMarkdown('# ', '')" class="hover:text-neon-yellow">H1</button>
+                  <button type="button" @click="insertMarkdown('## ', '')" class="hover:text-neon-yellow">H2</button>
+                  <button type="button" @click="insertMarkdown('`', '`')" class="hover:text-neon-yellow">&lt;&gt;</button>
+                </div>
+                <textarea
+                  v-model="form.content"
+                  ref="contentArea"
+                  data-test="content-input"
+                  placeholder="# 项目概述&#10;&#10;在这里写项目正文..."
+                  class="w-full bg-[#050810] border border-line px-4 py-3 text-text font-mono text-sm outline-none focus:border-neon-yellow transition-colors resize-vertical"
+                  rows="15"
+                ></textarea>
+              </div>
+
+              <!-- 预览区 -->
+              <div v-show="editorMode !== 'edit'" class="min-w-0">
+                <div class="flex items-center justify-between px-4 py-2 bg-bg-panel border border-line border-b-0 font-mono text-xs text-text-dim">
+                  <span>PREVIEW</span>
+                  <span class="text-[10px]">实时渲染结果</span>
+                </div>
+                <div
+                  data-test="markdown-preview"
+                  class="markdown-body bg-[#050810] border border-line px-4 py-3 min-h-[320px] max-h-[560px] overflow-auto"
+                  v-html="renderedPreview"
+                ></div>
+              </div>
+            </div>
+
+            <div class="font-mono text-xs text-text-dim mt-1">
+              提示：使用 Markdown 编写，预览会实时更新；支持标题、列表、代码块、链接、图片、表格等。
+            </div>
           </div>
 
           <!-- 底部操作按钮 -->
@@ -267,6 +318,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { getAdminProjectDetail, createProject, updateProject, uploadImage } from '@/api'
 
 const route = useRoute()
@@ -299,6 +352,15 @@ const form = ref({
   category: 'project',
   sort_order: 999,
   project_images: [] // BUG-12 修复：项目图片数组
+})
+
+// Markdown 实时预览
+const editorMode = ref('edit')
+const renderedPreview = computed(() => {
+  if (!form.value.content || !form.value.content.trim()) {
+    return '<p style="color:#5a6b85">暂无内容</p>'
+  }
+  return DOMPurify.sanitize(marked(form.value.content))
 })
 
 // 加载项目数据（编辑模式）
@@ -344,7 +406,7 @@ const handleFileChange = async (e) => {
     form.value.cover_image = result.url
     uploadProgress.value = 0
   } catch (err) {
-    alert(err.detail || '上传失败')
+    alert(formatError(err, '上传失败'))
     uploadProgress.value = 0
   }
 }
@@ -381,7 +443,7 @@ const handleMultipleImages = async (e) => {
     multiUploadProgress.value = 0
     e.target.value = '' // 清空输入框，允许重复上传
   } catch (err) {
-    alert(err.detail || '上传失败')
+    alert(formatError(err, '上传失败'))
     multiUploadProgress.value = 0
   }
 }
@@ -408,13 +470,33 @@ const insertMarkdown = (before, after) => {
   }, 0)
 }
 
+// 统一解析后端错误（FastAPI 校验错误 detail 可能是数组）
+const formatError = (err, fallback = '保存失败') => {
+  if (Array.isArray(err?.detail)) {
+    return err.detail.map((item) => item.msg || '参数校验失败').join('\n')
+  }
+  return err?.detail || fallback
+}
+
+// 表单内回车不触发隐式提交，避免误发布
+const handleSubmit = () => {}
+
 // 提交数据的通用函数
 const submitData = async (isPublished) => {
+  const title = form.value.title.trim()
+
+  // 草稿允许留空；发布只强制要求标题
+  if (isPublished && !title) {
+    alert('发布前请至少填写项目标题')
+    return
+  }
+
   saving.value = true
 
   try {
     const data = {
       ...form.value,
+      title,
       is_published: isPublished
     }
 
@@ -428,7 +510,7 @@ const submitData = async (isPublished) => {
     alert(message)
     router.push('/admin/projects')
   } catch (err) {
-    alert(err.detail || '保存失败')
+    alert(formatError(err))
   } finally {
     saving.value = false
   }

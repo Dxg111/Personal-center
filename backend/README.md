@@ -57,12 +57,16 @@ CREATE DATABASE personal_center CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
 python init_db.py
 ```
 
+该脚本会先执行 Alembic 迁移（`alembic upgrade head`），再创建管理员账号和默认个人信息。
+
 初始化完成后会显示：
 
 ```
 管理员账号：admin
 管理员密码：123456
 ```
+
+> 已存在手工建表、但尚未接入 Alembic 的旧数据库，脚本会自动执行一次 `stamp head`，无需手动处理。
 
 ### 5. 启动服务
 
@@ -82,7 +86,7 @@ uvicorn app.main:app --reload --port 8000
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/profile` | 获取个人信息 |
-| GET | `/api/projects` | 获取项目列表（支持 category 和 published 过滤） |
+| GET | `/api/projects` | 获取项目列表（仅返回已发布项目，支持 category 过滤） |
 | GET | `/api/projects/featured` | 获取首页重点项目 |
 | GET | `/api/projects/{id}` | 获取项目详情（浏览量 +1） |
 
@@ -105,6 +109,23 @@ uvicorn app.main:app --reload --port 8000
 | PUT | `/api/admin/profile` | 更新个人信息 |
 | POST | `/api/admin/upload` | 上传图片 |
 
+## 数据库迁移
+
+本项目使用 Alembic 管理表结构变更：
+
+```bash
+# 应用所有迁移
+alembic upgrade head
+
+# 修改模型后生成新迁移
+alembic revision --autogenerate -m "描述本次变更"
+
+# 查看迁移历史
+alembic history
+```
+
+> 应用启动时不再自动建表，请先执行迁移（`python init_db.py` 会自动完成）。
+
 ## 运行测试
 
 ```bash
@@ -124,7 +145,9 @@ backend/
 │   ├── api/              # API 路由
 │   └── utils/            # 工具函数（认证、上传等）
 ├── uploads/              # 上传文件存储
-├── init_db.py            # 数据库初始化脚本
+├── alembic/              # Alembic 迁移脚本
+├── alembic.ini           # Alembic 配置
+├── init_db.py            # 数据库初始化脚本（迁移 + 种子数据）
 ├── test_main.py          # 单元测试
 ├── requirements.txt      # 依赖列表
 └── .env                  # 环境变量（不提交 Git）
@@ -134,12 +157,13 @@ backend/
 
 1. **生产环境部署**：
    - 修改 `.env` 中的 `SECRET_KEY`（建议使用 `openssl rand -hex 32` 生成）
-   - 修改 CORS 配置，只允许前端域名
-   - 关闭数据库 `echo=True`
+   - 通过 `CORS_ORIGINS` 配置允许的前端域名（多个用逗号分隔）
+   - 保持 `SQL_ECHO=false`，避免生产环境打印 SQL
    - 使用 Gunicorn 或 Uvicorn workers
 
 2. **图片上传**：
-   - 当前存储在本地 `uploads/` 目录
+   - 仅允许 JPG / PNG / WebP，并通过文件头校验真实内容
+   - 当前存储在本地 `uploads/` 目录（可通过 `UPLOAD_DIR` 配置）
    - 生产环境建议接入 OSS（阿里云/腾讯云）
 
 3. **数据库备份**：
