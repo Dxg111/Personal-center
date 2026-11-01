@@ -1,4 +1,10 @@
-from .profile import ProfileResponse, ProfileUpdate, LoginRequest, LoginResponse
+from .profile import (
+    ProfileResponse,
+    ProfileUpdate,
+    LoginRequest,
+    LoginResponse,
+    PasswordChange,
+)
 from .project import (
     ProjectCreate,
     ProjectUpdate,
@@ -12,6 +18,7 @@ __all__ = [
     "ProfileUpdate",
     "LoginRequest",
     "LoginResponse",
+    "PasswordChange",
     "ProjectCreate",
     "ProjectUpdate",
     "ProjectResponse",

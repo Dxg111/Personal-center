@@ -12,8 +12,9 @@ from app.schemas import (
     PublishToggle,
     ProfileResponse,
     ProfileUpdate,
+    PasswordChange,
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, get_password_hash, verify_password
 from app.utils.upload import save_upload_file
 import json
 
@@ -255,6 +256,31 @@ def update_profile(
             profile_dict['radar_skills'] = None
 
     return ProfileResponse(**profile_dict)
+
+
+# ============ 账号安全 ============
+
+@router.put("/password")
+def change_password(
+    payload: PasswordChange,
+    session: Session = Depends(get_session),
+    current_user: AdminUser = Depends(get_current_user)
+):
+    """修改当前管理员密码"""
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="当前密码不正确")
+
+    if not payload.new_password.strip():
+        raise HTTPException(status_code=422, detail="新密码不能为空")
+
+    if payload.current_password == payload.new_password:
+        raise HTTPException(status_code=400, detail="新密码不能与当前密码相同")
+
+    current_user.hashed_password = get_password_hash(payload.new_password)
+    session.add(current_user)
+    session.commit()
+
+    return {"message": "密码修改成功"}
 
 
 # ============ 文件上传 ============

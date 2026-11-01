@@ -46,6 +46,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/admin/password',
+    name: 'AdminPassword',
+    component: () => import('@/views/admin/PasswordEdit.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/public/NotFound.vue')

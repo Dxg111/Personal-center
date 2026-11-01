@@ -14,6 +14,12 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class PasswordChange(BaseModel):
+    """修改管理员密码"""
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class RadarSkill(BaseModel):
     """雷达图技能"""
     name: str

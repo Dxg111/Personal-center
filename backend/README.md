@@ -107,6 +107,7 @@ uvicorn app.main:app --reload --port 8000
 | PUT | `/api/admin/projects/{id}/publish` | 切换发布/草稿状态 |
 | GET | `/api/admin/profile` | 获取个人信息 |
 | PUT | `/api/admin/profile` | 更新个人信息 |
+| PUT | `/api/admin/password` | 修改管理员密码（需验证当前密码） |
 | POST | `/api/admin/upload` | 上传图片 |
 
 ## 数据库迁移

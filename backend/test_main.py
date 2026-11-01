@@ -106,6 +106,72 @@ def test_login_wrong_username(client: TestClient):
     assert response.status_code == 401
 
 
+# ============ 测试修改管理员密码 ============
+
+def test_change_password_requires_current_password(
+    client: TestClient, admin_user: AdminUser, auth_token: str
+):
+    """当前密码错误时拒绝修改"""
+    response = client.put(
+        "/api/admin/password",
+        json={"current_password": "wrongpass", "new_password": "newpass123"},
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "当前密码不正确"
+
+
+def test_change_password_rejects_too_short_new_password(
+    client: TestClient, admin_user: AdminUser, auth_token: str
+):
+    """新密码少于 8 位时校验失败"""
+    response = client.put(
+        "/api/admin/password",
+        json={"current_password": "testpass123", "new_password": "1234567"},
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 422
+
+
+def test_change_password_rejects_same_password(
+    client: TestClient, admin_user: AdminUser, auth_token: str
+):
+    """新密码不能与当前密码相同"""
+    response = client.put(
+        "/api/admin/password",
+        json={"current_password": "testpass123", "new_password": "testpass123"},
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "新密码不能与当前密码相同"
+
+
+def test_change_password_and_login_with_new_password(
+    client: TestClient, admin_user: AdminUser, auth_token: str
+):
+    """修改成功后旧密码失效、新密码可登录"""
+    response = client.put(
+        "/api/admin/password",
+        json={"current_password": "testpass123", "new_password": "newpass123"},
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 200
+    assert response.json()["message"] == "密码修改成功"
+
+    old_login = client.post(
+        "/api/auth/login",
+        json={"username": "testadmin", "password": "testpass123"}
+    )
+    assert old_login.status_code == 401
+
+    new_login = client.post(
+        "/api/auth/login",
+        json={"username": "testadmin", "password": "newpass123"}
+    )
+    assert new_login.status_code == 200
+    assert "access_token" in new_login.json()
+
+
 # ============ 测试个人信息（公开） ============
 
 def test_get_profile(client: TestClient, profile: Profile):

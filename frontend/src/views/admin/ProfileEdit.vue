@@ -17,6 +17,12 @@
             个人信息编辑
           </div>
         </div>
+        <router-link
+          to="/admin/password"
+          class="font-mono text-xs text-text-dim hover:text-neon-yellow transition-colors"
+        >
+          修改密码
+        </router-link>
       </div>
 
       <!-- 表单 -->

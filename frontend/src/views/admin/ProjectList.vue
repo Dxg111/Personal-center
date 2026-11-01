@@ -16,6 +16,12 @@
           >
             个人信息
           </router-link>
+          <router-link
+            to="/admin/password"
+            class="font-mono text-xs text-text-dim hover:text-neon-yellow transition-colors"
+          >
+            修改密码
+          </router-link>
           <button
             @click="handleLogout"
             class="font-mono text-xs text-text-dim hover:text-neon-yellow transition-colors"

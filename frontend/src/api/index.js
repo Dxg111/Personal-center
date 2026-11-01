@@ -46,6 +46,9 @@ export const getAdminProfile = () => api.get('/admin/profile')
 // 更新个人信息
 export const updateProfile = (data) => api.put('/admin/profile', data)
 
+// 修改管理员密码
+export const changePassword = (data) => api.put('/admin/password', data)
+
 // 上传图片
 export const uploadImage = (file) => {
   const formData = new FormData()
