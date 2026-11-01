@@ -1,314 +1,128 @@
-# Personal Center - 个人中心站点
+# Personal Center
 
-> 基于 Vue3 + FastAPI 的全栈个人中心项目
-> 
-> 版本：v1.0.0 MVP
+个人站 / 作品集，基于 Vue3 + FastAPI + MySQL，包含访客展示端和管理后台。
 
-## 🎉 项目完成情况
+## 功能
 
-### ✅ 已完成功能（MVP 全部完成）
+**访客端**
 
-**后端 API（100%）：**
-- ✅ FastAPI + SQLModel + MySQL 架构
-- ✅ JWT 认证系统
-- ✅ 用户管理（管理员登录）
-- ✅ 项目 CRUD（创建、读取、更新、删除）
-- ✅ 草稿/发布状态管理
-- ✅ 个人信息管理
-- ✅ 图片上传功能
-- ✅ 浏览量统计
-- ✅ 分类筛选（项目/作品）
-- ✅ 完整单元测试（17/17 通过）
+- 首页 Hero、头像、简介、雷达技能、打字机文案
+- 项目 / 作品分类切换
+- 项目详情：Markdown、技术栈、外链、多图自动轮播、浏览量
+- 404 页面、响应式布局、终端风格页脚
 
-**前端页面（100%）：**
+**管理端**
 
-访客端：
-- ✅ 首页（科幻工科风格 Hero + 雷达动画 + 打字机效果）
-- ✅ 项目列表展示（支持分类切换）
-- ✅ 项目详情页（Markdown 渲染 + 浏览量统计）
-- ✅ 404 页面（雷达失败动画）
-- ✅ 终端风格页脚
+- JWT 登录与路由守卫
+- 项目 CRUD、草稿 / 发布、多图上传、排序
+- 个人信息、打字机文案、雷达技能编辑
+- 管理员修改密码
+- Markdown 实时预览
 
-管理端：
-- ✅ 登录页面（JWT 认证）
-- ✅ 项目列表（统计数据 + 状态管理）
-- ✅ 项目编辑（支持 Markdown + 图片上传）
-- ✅ 草稿/发布功能
-- ✅ 个人信息编辑
-- ✅ 路由守卫（权限控制）
+## 技术栈
 
-**视觉效果（100%）：**
-- ✅ 鼠标光斑跟随
-- ✅ 网格线背景
-- ✅ 雷达扫描动画
-- ✅ 打字机 slogan 效果
-- ✅ 状态指示灯闪烁
-- ✅ 卡片 hover 动效
-- ✅ 切角设计元素
-- ✅ 科幻深色主题（访客端绿色 #00ffc8 + 管理端黄色 #ffb020）
+| 层级 | 技术 |
+|---|---|
+| 前端 | Vue 3、Vite、Vue Router、Pinia、Tailwind CSS、marked、DOMPurify |
+| 后端 | FastAPI、SQLModel、Pydantic、Uvicorn |
+| 数据库 | MySQL 8 + Alembic |
+| 测试 | pytest、Vitest、@vue/test-utils、jsdom |
+| 部署 | Docker Compose、Nginx |
 
----
+## 目录
 
-## 🚀 快速开始
+```text
+Personal-center/
+├── backend/            # FastAPI + SQLModel + Alembic
+│   ├── app/            # API、模型、schema、工具
+│   ├── alembic/        # 数据库迁移
+│   └── init_db.py      # 迁移 + 初始化管理员/个人信息
+├── frontend/           # Vue3 + Vite
+│   └── src/
+│       ├── views/public/   # 首页、详情、404
+│       └── views/admin/    # 登录、项目、个人信息、改密
+├── docx/               # 需求、方案、部署指南
+├── docker-compose.yml
+└── docker-compose.env.example
+```
 
-### 环境要求
+## 本地开发
 
-- Python 3.9+
-- Node.js 16+
-- MySQL 8.0+
-
-### 1. 后端启动
+### 后端
 
 ```bash
 cd backend
 
-# 安装依赖
+# 1. 创建数据库（Compose 部署会自动创建）
+mysql -u root -p -e \
+  "CREATE DATABASE personal_center CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 2. 配置环境变量
+cp .env.example .env
+# 编辑 DATABASE_URL、SECRET_KEY、ADMIN_PASSWORD
+
+# 3. 安装依赖、迁移并初始化
 pip install -r requirements.txt
-
-# 配置数据库
-# 编辑 .env 文件，设置数据库连接信息
-
-# 创建数据库
-mysql -u root -p
-CREATE DATABASE personal_center CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-# 初始化数据库
 python init_db.py
 
-# 启动服务
+# 4. 启动
 uvicorn app.main:app --reload --port 8000
 ```
 
-后端服务：http://localhost:8000
-API 文档：http://localhost:8000/docs
+- API 文档：http://localhost:8000/docs
+- 健康检查：http://localhost:8000/health
 
-**默认管理员账号：**
-- 用户名：`admin`
-- 密码：`123456`
-
-### 2. 前端启动
+### 前端
 
 ```bash
 cd frontend
-
-# 安装依赖
 npm install
-
-# 启动开发服务器
 npm run dev
 ```
 
-前端服务：http://localhost:5173
+- 前端：http://localhost:5173
+- 管理后台：http://localhost:5173/admin/login
 
----
-
-## 📁 项目结构
-
-```
-Personal-center/
-├── backend/                    # 后端
-│   ├── app/
-│   │   ├── main.py            # FastAPI 入口
-│   │   ├── config.py          # 配置管理
-│   │   ├── database.py        # 数据库连接
-│   │   ├── models/            # 数据模型
-│   │   │   ├── user.py        # 管理员用户
-│   │   │   ├── project.py     # 项目
-│   │   │   └── profile.py     # 个人信息
-│   │   ├── schemas/           # 请求/响应模型
-│   │   ├── api/               # API 路由
-│   │   │   ├── auth.py        # 认证
-│   │   │   ├── projects.py    # 项目（公开）
-│   │   │   ├── profile.py     # 个人信息（公开）
-│   │   │   └── admin.py       # 管理端
-│   │   └── utils/             # 工具函数
-│   │       ├── auth.py        # JWT 认证
-│   │       └── upload.py      # 文件上传
-│   ├── uploads/               # 上传文件
-│   ├── init_db.py            # 数据库初始化
-│   ├── test_main.py          # 单元测试
-│   ├── test_api.py           # API 集成测试
-│   ├── requirements.txt      # 依赖列表
-│   └── .env                  # 环境变量
-│
-├── frontend/                  # 前端
-│   ├── src/
-│   │   ├── views/
-│   │   │   ├── public/       # 访客端页面
-│   │   │   │   ├── Home.vue           # 首页
-│   │   │   │   ├── ProjectDetail.vue  # 项目详情
-│   │   │   │   └── NotFound.vue       # 404
-│   │   │   └── admin/        # 管理端页面
-│   │   │       ├── Login.vue          # 登录
-│   │   │       ├── ProjectList.vue    # 项目列表
-│   │   │       ├── ProjectEdit.vue    # 项目编辑
-│   │   │       └── ProfileEdit.vue    # 个人信息编辑
-│   │   ├── router/           # 路由配置
-│   │   ├── stores/           # Pinia 状态管理
-│   │   ├── api/              # API 封装
-│   │   ├── assets/           # 静态资源
-│   │   ├── style.css         # 全局样式
-│   │   ├── App.vue
-│   │   └── main.js
-│   ├── index.html
-│   ├── vite.config.js
-│   ├── tailwind.config.js
-│   └── package.json
-│
-└── docx/                      # 文档
-    ├── 需求分析文档.md
-    └── 方案设计文档.md
-```
-
----
-
-## 🔌 API 接口
-
-### 公开接口
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/profile` | 获取个人信息 |
-| GET | `/api/projects` | 获取项目列表（支持 category 和 published 过滤） |
-| GET | `/api/projects/featured` | 获取首页重点项目 |
-| GET | `/api/projects/{id}` | 获取项目详情（浏览量 +1） |
-
-### 认证接口
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/auth/login` | 管理员登录 |
-
-### 管理接口（需要 JWT Token）
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/admin/projects` | 获取后台项目列表（含草稿） |
-| POST | `/api/admin/projects` | 创建项目 |
-| PUT | `/api/admin/projects/{id}` | 编辑项目 |
-| DELETE | `/api/admin/projects/{id}` | 删除项目 |
-| PUT | `/api/admin/projects/{id}/publish` | 切换发布/草稿状态 |
-| GET | `/api/admin/profile` | 获取个人信息 |
-| PUT | `/api/admin/profile` | 更新个人信息 |
-| POST | `/api/admin/upload` | 上传图片 |
-
----
-
-## 🎨 设计风格
-
-### 访客端（公开站点）
-- **主色调**：荧光绿 `#00ffc8`
-- **背景**：深蓝黑 `#050810`
-- **风格**：科幻工科风，雷达扫描、网格线、终端元素
-
-### 管理端（后台）
-- **主色调**：黄色 `#ffb020`（区分访客端）
-- **背景**：深蓝黑 `#050810`
-- **风格**：控制台风格，表格数据展示
-
-### 字体
-- 正文：系统默认字体
-- 代码/终端：JetBrains Mono
-- 标题：Rajdhani
-
----
-
-## 🧪 测试
-
-### 后端测试
+### Docker Compose
 
 ```bash
-cd backend
+# 1. 准备环境变量
+cp docker-compose.env.example .env
+cp backend/.env.production.example backend/.env.production
+# 编辑两处密码和 SECRET_KEY
 
-# 运行单元测试
-pytest test_main.py -v
-
-# 运行 API 集成测试
-python test_api.py
+# 2. 构建、迁移、启动
+docker compose build
+docker compose run --rm backend python init_db.py
+docker compose up -d
 ```
 
-所有测试通过：
-- ✅ 15/15 API 接口测试通过
-- ✅ 17/17 单元测试通过
+- 前端：http://localhost:8080
+- 管理后台：http://localhost:8080/admin/login
+- 管理员密码：`backend/.env.production` 中的 `ADMIN_PASSWORD`
 
----
+## 测试
 
-## 📝 使用说明
+```bash
+# 后端
+cd backend
+python -m pytest test_main.py -q
 
-### 1. 首次使用
+# 前端
+cd frontend
+npm test
+```
 
-1. 启动后端和前端服务
-2. 访问 http://localhost:5173
-3. 点击右上角进入管理后台（或直接访问 http://localhost:5173/admin/login）
-4. 使用默认账号登录：`admin` / `123456`
-5. 编辑个人信息
-6. 创建第一个项目
+## 文档
 
-### 2. 创建项目
+- [需求分析](docx/需求分析文档.md)
+- [方案设计](docx/方案设计文档.md)
+- [VPS + Docker Compose 部署指南](docx/VPS-DockerCompose部署指南.md)
+- [后端说明](backend/README.md)
 
-1. 登录后台 → 点击"+ 新建"
-2. 填写项目信息：
-   - 标题、简介
-   - 分类（项目/作品）
-   - 技术栈（逗号分隔）
-   - 上传封面图
-   - 演示链接、GitHub 链接
-   - 正文（支持 Markdown）
-3. 选择"存草稿"或"发布"
+## 安全提醒
 
-### 3. 管理项目
-
-- **编辑**：修改项目内容
-- **发布/取消发布**：切换项目状态
-- **删除**：永久删除项目
-- **排序**：通过 sort_order 控制首页展示顺序
-
----
-
-## 🔐 安全性
-
-- ✅ JWT Token 认证
-- ✅ 密码 bcrypt 哈希
-- ✅ SQL 注入防护（ORM 参数化）
-- ✅ XSS 防护（DOMPurify 清洗 HTML）
-- ✅ 文件上传验证（类型、大小限制）
-- ✅ 路由守卫（未登录自动跳转）
-
----
-
-## 🚧 后续扩展（P1-P3）
-
-### P1 - 第二优先级
-- [ ] 文章/博客模块
-- [ ] 项目扩展标签（角色、周期、类型）
-
-### P2 - 第三优先级
-- [ ] AI 智能问答（右下角气泡）
-- [ ] 深色/浅色模式切换
-- [ ] GitHub 贡献图嵌入
-- [ ] 文章目录自动生成
-
-### P3 - 第四优先级
-- [ ] 后台数据看板（浏览趋势、访客来源）
-- [ ] 时间线经历页
-
----
-
-## 📄 License
-
-MIT
-
----
-
-## 👤 作者
-
-DXG
-
----
-
-**🎉 MVP 已完成，所有核心功能可用！**
-
-访问地址：
-- 前端：http://localhost:5173
-- 后端 API：http://localhost:8000/docs
-- 管理后台：http://localhost:5173/admin/login
+- `.env`、`backend/.env.production` 已被 Git 忽略，不要提交
+- 上线前修改 `SECRET_KEY` 和管理员密码
+- 生产环境启用 HTTPS，只暴露 Nginx 的 80/443
+- 定期备份 MySQL 和 `uploads` volume
