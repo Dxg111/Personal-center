@@ -12,6 +12,7 @@ __pycache__/
 .env
 .env.local
 .env.*.local
+.env.production
 
 # IDE
 .vscode/
@@ -43,3 +44,8 @@ yarn-error.log*
 
 # 上传文件
 uploads/
+
+# 部署数据（备份、证书、本地数据目录）
+backups/
+certs/
+data/
