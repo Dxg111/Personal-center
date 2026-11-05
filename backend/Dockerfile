@@ -13,9 +13,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Python 依赖
+# 默认走国内镜像：大陆服务器直连 pypi.org 普遍只有几 KB/s，会以
+# ReadTimeoutError 或 "No matching distribution found" 的形式失败。
+# 可通过 docker-compose 的 build.args.PIP_INDEX_URL 覆盖。
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+ENV PIP_INDEX_URL=${PIP_INDEX_URL} \
+    PIP_DEFAULT_TIMEOUT=60 \
+    PIP_RETRIES=5
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制应用代码（.dockerignore 已排除 .env / 测试 / 上传文件）
 COPY . .
