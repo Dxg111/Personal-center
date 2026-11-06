@@ -631,3 +631,50 @@ def test_upload_accepts_png(client: TestClient, auth_token: str, tmp_path, monke
     assert url.startswith("/static/uploads/")
     assert url.endswith(".png")
     assert len(list(tmp_path.glob("*.png"))) == 1
+
+
+# ============ 测试管理端项目创建 ============
+
+def test_create_project_with_empty_images(client: TestClient, auth_token: str):
+    """空图片列表也必须序列化为 JSON 字符串，不能把 list 直接传给 SQL 参数
+
+    回归：create_project 曾用 `if project_data.get('project_images')` 判断，
+    [] 是 falsy 会被跳过序列化，列表最终被 DBAPI 渲染成 ()，触发 MySQL 1064。
+    """
+    response = client.post(
+        "/api/admin/projects",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={
+            "title": "测试项目",
+            "summary": "测试摘要",
+            "content": "测试内容",
+            "project_images": [],
+            "tech_stack": "Python",
+            "category": "project",
+            "is_published": False,
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["project_images"] == []
+
+
+def test_create_project_with_images(client: TestClient, auth_token: str):
+    """非空图片列表正常存储并原样返回"""
+    response = client.post(
+        "/api/admin/projects",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={
+            "title": "测试项目2",
+            "summary": "测试摘要",
+            "content": "测试内容",
+            "project_images": ["/static/uploads/a.jpg", "/static/uploads/b.jpg"],
+            "tech_stack": "Python",
+            "category": "project",
+            "is_published": True,
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["project_images"] == [
+        "/static/uploads/a.jpg",
+        "/static/uploads/b.jpg",
+    ]

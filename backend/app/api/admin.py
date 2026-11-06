@@ -84,7 +84,10 @@ def create_project(
     project_data = project.model_dump()
 
     # BUG-12 修复：将项目图片列表转换为JSON字符串存储
-    if project_data.get('project_images'):
+    # 注意：空列表 [] 也是合法值，必须用 is not None 判断。用真假值判断会让
+    # [] 漏过序列化，以 Python list 传给 Text 字段后会被渲染成 ()，导致
+    # MySQL 1064 语法错误（admin.py 的 update 接口已是正确写法）
+    if project_data.get('project_images') is not None:
         project_data['project_images'] = json.dumps(project_data['project_images'])
 
     db_project = Project(**project_data)
